@@ -1,5 +1,5 @@
 # EQueueSim
-This is the simulator-code running on GoogleSheeps Apps-script for my upcoming boardgame EQueue (offline game)
+This is the simulator-code running on GoogleSheets Apps-script for my upcoming boardgame EQueue (offline game)
 
 This project is tied quite deeply into the GoogleSheet where I keep all my card-parameters for over 200 cards and action-tiles.
 I will soon also create a simple dummy-sheet to show how it is used to calculate all possibilities, strength curves of each item, etc.
@@ -10,7 +10,7 @@ Following my gameplay rules, the simulator takes random sets of cards from the s
 the hexagonal action-tiles placements (within memory) and depending on players choices, takes action, plays cards, takes 
 income etc.
 
-# How to replicate
+## How to replicate
 
 The order of the scripts is important within GoogleApps Script dashboard. This is the order I've used:
 - BinaryHeap.gs
