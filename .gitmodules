@@ -1,0 +1,3 @@
+[submodule "BHex.js"]
+	path = BHex.js
+	url = https://github.com/bodinaren/BHex.js
