@@ -20,18 +20,22 @@ function initActionTiles() {
   let actionSheet = SpreadsheetApp.getActiveSpreadsheet().getRange('Sheet1!A200:BL227').getValues();
   let actionCalcSheet = SpreadsheetApp.getActiveSpreadsheet().getRange('calc!A200:BL227').getValues();
   let posBuffer = new BHex.Axial(0,0);
+  let coin = true;
 
   for(let tileIndex=0; tileIndex<actionSheet.length; tileIndex++){
     let decoded = decodeSheetRow(tileIndex, actionSheet[tileIndex], actionCalcSheet[tileIndex]);
     decoded.pos = _.pick(posBuffer, ['x', 'y']);
     decoded.type = 'tile';
-    console.log(tileIndex+': putting tile '+decoded.id+' on board: '+grid.getHexAt(posBuffer).getKey());
-    decoded = _.pick(decoded, ['x', 'y', 'type', 'xp', 'no', 'id', 'income', 'outgo']);
+    decoded.side = (tileIndex % 2 == 0) ? coin : !coin;
+
+    console.log(tileIndex+': putting tile '+decoded.id+' on board: '+grid.getHexAt(posBuffer).getKey()+' and using side '+decoded.side);
+    decoded = _.pick(decoded, ['x', 'y', 'type', 'side', 'xp', 'no', 'id', 'income', 'outgo']);
     actionTiles.push(decoded);
 
     if(tileIndex % 2 == 1 && tileIndex<actionSheet.length){     // every 2 half of a tile is @same location
       // pick a random neighbor for the new tile from neighbors only
       let neigh = _.shuffle(grid.getNeighborsUnblocked(posBuffer));
+      coin = _.random(0, 9999) % 2 == 0 ? false : true;
       posBuffer = neigh.pop();
       if(_.indexOf(dones, grid.getHexAt(posBuffer).getKey())>-1){
         let neigh = _.shuffle(_.shuffle(grid.getNeighborsUnblocked(posBuffer)));
@@ -40,7 +44,7 @@ function initActionTiles() {
       }else{
         dones.push(grid.getHexAt(posBuffer).getKey());
       }
-console.log('dones: '+dones.join('::'));
+      console.log('dones: '+dones.join('::'));
       console.log('flushing buffer with '+grid.getHexAt(posBuffer).getKey());
     }
   }
