@@ -23,7 +23,7 @@ recursiveFunction()
 */
 BHex.Grid.prototype.investigate = function (a) {
   var grid = this;
-  console.log('call me only once...::'+a.x+'::'+a.y+'::...');
+//  console.log('call me only once...::'+a.x+'::'+a.y+'::...');
 
   var neighbors = [],
     parentBorders = [
@@ -32,7 +32,7 @@ BHex.Grid.prototype.investigate = function (a) {
     ];
 
   this.skipList.push(grid.getHexAt(a).getKey());
-  console.log('>>> adding '+grid.getHexAt(a).getKey()+' to the skiplist...');
+//  console.log('>>> adding '+grid.getHexAt(a).getKey()+' to the skiplist...');
 
   for (let c = 0; c < parentBorders.length; c++) {
 
@@ -51,7 +51,7 @@ BHex.Grid.prototype.investigate = function (a) {
             console.log('>>> adding '+theHex.getKey()+' to the skiplist...');
             this.skipList.push(theHex.getKey());
             this.skipList = _.uniq(this.skipList);
-            console.log(this.skipList.join(' ::: '));
+//            console.log(this.skipList.join(' ::: '));
 
             let childBorders = grid.investigate(theHex);
             for (let d = 0; d < childBorders.length; d++) {
@@ -68,7 +68,7 @@ BHex.Grid.prototype.investigate = function (a) {
       }
   };
   neighbors = _.uniq(_.pull(neighbors, this.skipList));
-  console.log(this.skipList.join(' ::: '));
+//  console.log(this.skipList.join(' ::: '));
   return neighbors;
 };
 
@@ -82,7 +82,7 @@ BHex.Grid.prototype.placeAtBorder = function (a) {
   var colli = grid.investigate(a);
   if(colli.length>0){
     let putTo = grid.getHexAt(_.sample(colli));
-    console.info('>>> the new tile will be placed at: '+putTo.getKey());
+//    console.info('>>> the new tile will be placed at: '+putTo.getKey());
     return putTo;
   }
 };

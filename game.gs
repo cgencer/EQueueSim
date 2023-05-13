@@ -30,14 +30,14 @@ function initActionTiles() {
     decoded.side = (tileIndex % 2 == 0) ? coin : !coin;
     actionTiles.push(
       _.pick(decoded, ['x', 'y', 'type', 'side', 'xp', 'no', 'id', 'income', 'outgo']));
-    console.info('>>> put the tile '+decoded.id+' onto grid '+grid.getHexAt(posBuffer).getKey()+' with side '+decoded.side);
+    console.info('>>> placing the tile '+decoded.id+' onto grid '+grid.getHexAt(posBuffer).getKey()+' with side '+decoded.side);
 
     if(tileIndex % 2 == 1 && tileIndex<actionSheet.length){     // every 2 half of a tile is @same location
       // pick a random neighbor for the new tile from neighbors only
       coin = _.random(0, 9999) % 2 == 0 ? false : true;
       posBuffer = grid.placeAtBorder(posBuffer);
       if(!posBuffer){break;}
-      console.log('flushing buffer with '+grid.getHexAt(posBuffer).getKey());
+//      console.log('flushing buffer with '+grid.getHexAt(posBuffer).getKey());
     }
   }
 }
