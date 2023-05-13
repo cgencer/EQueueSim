@@ -23,7 +23,6 @@ recursiveFunction()
 */
 BHex.Grid.prototype.investigate = function (a) {
   var grid = this;
-  grid.skipList = grid.skipList || [];
   console.log('call me only once...::'+a.x+'::'+a.y+'::...');
 
   var neighbors = [],
@@ -32,42 +31,50 @@ BHex.Grid.prototype.investigate = function (a) {
       new BHex.Axial(a.x - 1, a.y), new BHex.Axial(a.x - 1, a.y + 1), new BHex.Axial(a.x, a.y + 1)
     ];
 
-  grid.skipList.push(grid.getHexAt(a).getKey());
+  this.skipList.push(grid.getHexAt(a).getKey());
   console.log('>>> adding '+grid.getHexAt(a).getKey()+' to the skiplist...');
 
   for (let c = 0; c < parentBorders.length; c++) {
 
-    let theHex = grid.getHexAt(parentBorders[c]);
-    if(_.indexOf(grid.skipList, theHex.getKey()) == -1){
-    if( theHex && !theHex.blocked ) {       // blocked=false
+    let theHex = this.getHexAt(parentBorders[c]);
 
-      grid.mark(a);
-//      console.info('adding neighbors...: '+theHex.getKey());
-      neighbors.push(theHex);
+      if( theHex && !theHex.blocked ) {       // blocked=false
 
-    } else {      // blocked=true ... there is a neighbor
+        grid.mark(a);
+  //      console.info('adding neighbors...: '+theHex.getKey());
+        neighbors.push(theHex);
 
+      } else {      // blocked=true ... there is a neighbor
 
-          console.log('>>> adding '+theHex.getKey()+' to the skiplist...');
-          grid.skipList.push(theHex.getKey());
+        if(_.find(this.skipList, theHex.getKey())){
 
-          let childBorders = grid.investigate(theHex);
-          for (let d = 0; d < childBorders.length; d++) {
+            console.log('>>> adding '+theHex.getKey()+' to the skiplist...');
+            this.skipList.push(theHex.getKey());
+            this.skipList = _.uniq(this.skipList);
+            console.log(this.skipList.join(' ::: '));
 
-            let childHex = grid.getHexAt(childBorders[d]);
-            if(childHex && !childHex.blocked){
-              neighbors.push(childHex);
-            } else {
-              continue;
-            }
+            let childBorders = grid.investigate(theHex);
+            for (let d = 0; d < childBorders.length; d++) {
 
-          };
+              let childHex = grid.getHexAt(childBorders[d]);
+              if(childHex && !childHex.blocked){
+                neighbors.push(childHex);
+              } else {
+                continue;
+              }
+
+            };
+        }
       }
-    }
   };
-  grid.skipList = _.uniq(_.pull(neighbors, grid.skipList));
-  console.log(grid.skipList);
-  return grid.skipList;
+  neighbors = _.uniq(_.pull(neighbors, this.skipList));
+  console.log(this.skipList.join(' ::: '));
+  return neighbors;
+};
+
+BHex.Grid.prototype.initMarkers = function (a) {
+  var grid = this;
+  this.skipList = [];
 };
 
 BHex.Grid.prototype.placeAtBorder = function (a) {

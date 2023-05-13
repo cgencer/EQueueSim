@@ -16,6 +16,7 @@ function buildDeckOfIndexes() {
 
 function initActionTiles() {
   let grid = new BHex.Grid(8);
+  grid.initMarkers();
 
   let actionSheet = SpreadsheetApp.getActiveSpreadsheet().getRange('Sheet1!A200:BL227').getValues();
   let actionCalcSheet = SpreadsheetApp.getActiveSpreadsheet().getRange('calc!A200:BL227').getValues();
