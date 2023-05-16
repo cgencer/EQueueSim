@@ -46,11 +46,104 @@ const fromA1Notation = (cell) => {
 };
 
 /**
+ * R1C1 pattern
+ *
+ * @type {RegExp}
+ */
+
+const R1C1 = /^R([1-9]\d*)C([1-9]\d*)$/
+
+/**
+ * A1 pattern
+ *
+ * @type {RegExp}
+ */
+
+const A1 = /^([A-Z]+)(\d+)$/
+
+/**
+ * Auto detect notation used and convert to the opposite notation
+ *
+ * @param   {string} ref
+ * @returns {string}
+ * @throws  {Error}
+ */
+
+function cellref (ref) {
+  if (R1C1.test(ref)) {
+    return convertR1C1toA1(ref)
+  }
+
+  if (A1.test(ref)) {
+    return convertA1toR1C1(ref)
+  }
+
+  throw new Error(`could not detect cell reference notation for ${ref}`)
+}
+
+/**
+ * Convert A1 notation to R1C1 notation
+ *
+ * @param   {string} ref
+ * @returns {string}
+ * @throws  {Error}
+ */
+
+function convertA1toR1C1 (ref) {
+  if (!A1.test(ref)) {
+    throw new Error(`${ref} is not a valid A1 cell reference`)
+  }
+
+  const refParts = ref
+    .replace(A1, '$1,$2')
+    .split(',')
+
+  const columnStr = refParts[0]
+  const row = refParts[1]
+  let column = 0
+
+  for (let i = 0; i < columnStr.length; i++) {
+    column = 26 * column + columnStr.charCodeAt(i) - 64
+  }
+
+  return `R${row}C${column}`
+}
+
+/**
+ * Convert R1C1 notation to A1 notation
+ *
+ * @param {string} ref
+ * @returns {string}
+ * @throws {Error}
+ */
+
+function convertR1C1toA1 (ref) {
+  if (!R1C1.test(ref)) {
+    throw new Error(`${ref} is not a valid R1C1 cell reference`)
+  }
+
+  const refParts = ref
+    .replace(R1C1, '$1,$2')
+    .split(',')
+
+  const row = refParts[0]
+  let column = refParts[1]
+  let columnStr = ''
+
+  for (; column; column = Math.floor((column - 1) / 26)) {
+    columnStr = String.fromCharCode(((column - 1) % 26) + 65) + columnStr
+  }
+
+  return columnStr + row
+}
+
+
+/**
  * Converts a row from the sheet into a usable object
  * 
- * @param {integer} cell -  The card number from the shuffled deck
- * @param {sheet object} cell -  The sheet block containing the card attributes
- * @param {sheet object} cell -  The sheet block containing values based on the attributes
+ * @param {integer}      -  The card number from the shuffled deck
+ * @param {sheet object} -  The sheet block containing the card attributes
+ * @param {sheet object} -  The sheet block containing values based on the attributes
  * @returns {object} A deck object with values coming from the sheets:
  *                      no:       number of the card
  *                      id:       id for the card
@@ -69,6 +162,7 @@ function decodeSheetRow(i, sx, cx) {
   let c = cx[1];
   let qx = sx[FLAGS_START_COL - 2];
   if (sx[16] == true) qx *= -1;
+  const col = fromA1Notation('BJ1');
 
   var obj = {
     no: i,
@@ -77,6 +171,7 @@ function decodeSheetRow(i, sx, cx) {
     xp: cx[0],
     xpp: Number(c.substr(2)),
     cost: cx[3],
+    stage: sx[col.column-1],
     lvl: sx[5],
     q: qx+10,    // to sort also negatives, deduce this on usage
     income: (row[6] || row[11]) << 7 | (row[5] || row[10]) << 6 | (row[4] || row[9]) << 5 | (row[3] || row[8]) << 4 | (row[2] || row[7]) << 3 | row[1] << 1 | row[0],
@@ -150,29 +245,41 @@ function shuffleCardIndexes() {
   }
   return _.shuffle(arr);
 }
+/**
+ * Initializes the hexagonal action-tiles objects and their attributes,
+ * by looking up rows 200+ on the values-sheet and its corresponding 
+ * calculated values sheets. Two tiles will be set up for a location,
+ * thus selecting randomly one side.
+ * The created action-tile objects are similar with the card objects,
+ * both use the same decoding and bit-coding methods.
+ * 
+ * @param {sheet object}     - The sheet object
+ * @return {array}           - Array of action-tile objects
+ * 
+*/
 
-function initActionTiles() {
+function initActionTiles(sheet) {
+  let actionTiles = [];
   let grid = new BHex.Grid(8);
   grid.initMarkers();
 
-  let actionSheet = SpreadsheetApp.getActiveSpreadsheet().getRange('Sheet1!A200:BL227').getValues();
-  let actionCalcSheet = SpreadsheetApp.getActiveSpreadsheet().getRange('calc!A200:BL227').getValues();
+  let actionSheet = sheet.getRange('Sheet1!A200:BL227').getValues();
+  let actionCalcSheet = sheet.getRange('calc!A200:BL227').getValues();
   let posBuffer = new BHex.Axial(0,0);
   let coin = true;
 
-  let pidx = fromA1Notation('BI1');
-  pidx = pidx.column-1;
+  const col = fromA1Notation('BJ1');
 
   for(let tileIndex=0; tileIndex<actionSheet.length; tileIndex++){
     let decoded = decodeSheetRow(tileIndex, actionSheet[tileIndex], actionCalcSheet[tileIndex]);
     decoded.pos = posBuffer;
     decoded.type = 'tile';
-    decoded.players = actionSheet[tileIndex][pidx];
+    decoded.players = actionSheet[tileIndex][col.column];
 
-    decoded.bonuscard = actionSheet[tileIndex][pidx-1];
+    decoded.bonuscard = actionSheet[tileIndex][col.column-1];
     if(decoded.bonuscard=='') decoded.bonuscard = 0;
 
-    decoded.stage = actionSheet[tileIndex][pidx+1];
+    decoded.stage = actionSheet[tileIndex][col.column+1];
     if(decoded.stage=='') decoded.stage = '*';
 
     decoded.side = (tileIndex % 2 == 0) ? coin : !coin;
@@ -188,7 +295,8 @@ function initActionTiles() {
 //      console.log('flushing buffer with '+grid.getHexAt(posBuffer).getKey());
     }
   }
-  console.log(actionTiles);
+  return actionTiles;
+//  console.log(actionTiles);
 }
 
 function changePlayerStats(p, v, s) {  // playerNo, whichStat, statNo or value (c/s/q)

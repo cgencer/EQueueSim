@@ -46,7 +46,7 @@ BHex.Grid.prototype.investigate = function (a) {
 
       } else {      // blocked=true ... there is a neighbor
 
-        if(_.find(this.skipList, theHex.getKey())){
+        if(theHex && _.find(this.skipList, theHex.getKey())){
 
             console.log('>>> adding '+theHex.getKey()+' to the skiplist...');
             this.skipList.push(theHex.getKey());

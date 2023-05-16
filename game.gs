@@ -7,10 +7,9 @@ let numPlayers = 4;
 const FLAGS_START_COL = 19;
 
 function initGame(){
-  initActionTiles();
-  var players = initPlayerDecks(SpreadsheetApp.getActiveSpreadsheet(), shuffleCardIndexes(), numPlayers);
+  actionTiles = initActionTiles(SpreadsheetApp.getActiveSpreadsheet());
+  var players = initPlayerDecks(SpreadsheetApp.getActiveSpreadsheet(), shuffleCardIndexes(maxRow), numPlayers);
 
-console.log(players);
 /*
 playACard(0);
 playACard(1);
@@ -23,3 +22,7 @@ console.log(players);
 
 }
 initGame();
+
+
+
+
