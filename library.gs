@@ -158,22 +158,29 @@ function convertR1C1toA1 (ref) {
  *                                                    lower 3 bits (00000xxx) are poisons 3-1
  */
 function decodeSheetRow(i, sx, cx) {
-  let row = _.slice(sx, FLAGS_START_COL);
-  let c = cx[1];
-  let qx = sx[FLAGS_START_COL - 2];
-  if (sx[16] == true) qx *= -1;
-  const col = fromA1Notation('BJ1');
+  const FLAGS_START_COL = fromA1Notation('T1');
+  let row = _.slice(sx, FLAGS_START_COL);       // this is only the flags of income/outgo part
+  const colXP = fromA1Notation('A1');           // XP
+  const colXPP = fromA1Notation('B1');          // XPP
+  const colStage = fromA1Notation('BJ1');
+  const colXtal = fromA1Notation('R1');
+  const colLevel = fromA1Notation('F1');
+  const colCost = fromA1Notation('D1');
+  const colPay = fromA1Notation('Q1');
+  let xpp = cx[colXPP.column-1];
+  const xtal = sx[colXtal.column-1];
+  if (sx[colPay] == true) xtal *= -1;
 
   var obj = {
     no: i,
     id: sx[0],
     type: 'card',
-    xp: cx[0],
-    xpp: Number(c.substr(2)),
-    cost: cx[3],
-    stage: sx[col.column-1],
-    lvl: sx[5],
-    q: qx+10,    // to sort also negatives, deduce this on usage
+    xp: Number(cx[colXP.column-1]),
+    xpp: Number(xpp.substr(2)),     // remove [/-slash] from cell content
+    cost: cx[colCost.column-1],
+    stage: sx[colStage.column-1],
+    lvl: sx[colLevel.column-1],
+    q: Number(xtal)+10,             // to sort also negatives, deduce this on usage
     income: (row[6] || row[11]) << 7 | (row[5] || row[10]) << 6 | (row[4] || row[9]) << 5 | (row[3] || row[8]) << 4 | (row[2] || row[7]) << 3 | row[1] << 1 | row[0],
     outgo: // higher 5 bits are guardians, lower 3 bits are poisons
       (row[17] || row[22]) << 7 | (row[18] || row[23]) << 6 | (row[19] || row[24]) << 5 | (row[20] || row[25]) << 4 | (row[21] || row[26]) << 3 | (row[29] || row[32] || row[35]) | (row[28] || row[31] || row[34]) << 1 | (row[27] || row[30] || row[33]) << 2
@@ -188,6 +195,8 @@ function chooseTiles(aT, players) {
     _.filter(aT, { 'players': 2, 'stage': '*' }), 
     _.filter(aT, { 'players': 2, 'stage': 'wood' })
   ));
+  console.warn('tiles are here:');
+  console.log(sT);
   let vp = [];
   let nm = ['master', 'slave'];
   for(let p=0; p<players; p++){
@@ -199,7 +208,7 @@ function chooseTiles(aT, players) {
   return vp;
 }
 
-function initPlayerDecks(sheet, deck, numplayers) {
+function initPlayerDecks(sheet, deck, actionTiles, numplayers) {
   let players = [{}, {}, {}, {}, {}, {}, {}, {}];
   let copySheet = sheet.getRange('Sheet1!A2:BL' + maxRow).getValues();
   let copyCalc = sheet.getRange('calc!A2:O' + maxRow).getValues();
@@ -268,18 +277,17 @@ function initActionTiles(sheet) {
   let posBuffer = new BHex.Axial(0,0);
   let coin = true;
 
-  const col = fromA1Notation('BJ1');
+  const colPlayersNum = fromA1Notation('BI1');
+  const colStage = fromA1Notation('BJ1');
 
   for(let tileIndex=0; tileIndex<actionSheet.length; tileIndex++){
     let decoded = decodeSheetRow(tileIndex, actionSheet[tileIndex], actionCalcSheet[tileIndex]);
     decoded.pos = posBuffer;
     decoded.type = 'tile';
-    decoded.players = actionSheet[tileIndex][col.column];
+    decoded.players = actionSheet[tileIndex][colPlayersNum.column-1];
+    if(decoded.players=='') decoded.players = 0;
 
-    decoded.bonuscard = actionSheet[tileIndex][col.column-1];
-    if(decoded.bonuscard=='') decoded.bonuscard = 0;
-
-    decoded.stage = actionSheet[tileIndex][col.column+1];
+    decoded.stage = actionSheet[tileIndex][colStage.column-1];
     if(decoded.stage=='') decoded.stage = '*';
 
     decoded.side = (tileIndex % 2 == 0) ? coin : !coin;
@@ -311,6 +319,7 @@ function playACard(p) {
     if(players[p].stats.q >= theQ){
       let activatingCard = players[p].deck.pop();
       changePlayerStats(p, 'q', activatingCard.q);
+      if(players[p].workers.master){}
       changePlayerStats(p, 'xp', activatingCard.xp);
       players[p].activated.push(activatingCard);
     }
