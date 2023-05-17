@@ -195,10 +195,8 @@ function chooseTiles(aT, players) {
     _.filter(aT, { 'players': 2, 'stage': '*' }), 
     _.filter(aT, { 'players': 2, 'stage': 'wood' })
   ));
-  console.warn('tiles are here:');
-  console.log(sT);
   let vp = [];
-  let nm = ['master', 'slave'];
+  let nm = ['master', 'slaveOne'];
   for(let p=0; p<players; p++){
     vp[p] = {};
     for(let w=0; w<2; w++){
@@ -209,7 +207,7 @@ function chooseTiles(aT, players) {
 }
 
 function initPlayerDecks(sheet, deck, actionTiles, numplayers) {
-  let players = [{}, {}, {}, {}, {}, {}, {}, {}];
+  let players = [];
   let copySheet = sheet.getRange('Sheet1!A2:BL' + maxRow).getValues();
   let copyCalc = sheet.getRange('calc!A2:O' + maxRow).getValues();
   for (let j = 0; j < numplayers; j++) {
@@ -237,6 +235,7 @@ function initPlayerDecks(sheet, deck, actionTiles, numplayers) {
   }
 
   let tileSelection = chooseTiles(actionTiles, numplayers);
+
   for (let x = 0; x < numplayers; x++) {
     players[x].workers = tileSelection[x];
     players[x].deck = _.sortBy(players[x].deck, ['xp', 'xpp', 'q']);
@@ -244,6 +243,7 @@ function initPlayerDecks(sheet, deck, actionTiles, numplayers) {
       players[x].deck[y].q -= 10;
     }
   }
+  let toGoFields = movableFields(actionTiles, players);
   return players;
 }
 
@@ -282,7 +282,7 @@ function initActionTiles(sheet) {
 
   for(let tileIndex=0; tileIndex<actionSheet.length; tileIndex++){
     let decoded = decodeSheetRow(tileIndex, actionSheet[tileIndex], actionCalcSheet[tileIndex]);
-    decoded.pos = posBuffer;
+    decoded.pos = _.pick(posBuffer, ['x', 'y']);
     decoded.type = 'tile';
     decoded.players = actionSheet[tileIndex][colPlayersNum.column-1];
     if(decoded.players=='') decoded.players = 0;
@@ -292,7 +292,7 @@ function initActionTiles(sheet) {
 
     decoded.side = (tileIndex % 2 == 0) ? coin : !coin;
     actionTiles.push(
-      _.pick(decoded, ['x', 'y', 'type', 'side', 'xp', 'no', 'id', 'income', 'outgo', 'players', 'bonuscard', 'stage']));
+      _.pick(decoded, ['pos', 'x', 'y', 'type', 'side', 'xp', 'no', 'id', 'income', 'outgo', 'players', 'bonuscard', 'stage']));
     console.info('>>> placing the tile '+decoded.id+' onto grid '+grid.getHexAt(posBuffer).getKey()+' with side '+decoded.side);
 
     if(tileIndex % 2 == 1 && tileIndex<actionSheet.length){     // every 2 half of a tile is @same location
@@ -305,6 +305,21 @@ function initActionTiles(sheet) {
   }
   return actionTiles;
 //  console.log(actionTiles);
+}
+
+function movableFields(tiles, players) {
+  let fF = [];
+  for(let i=0; i<tiles.length; i++) {
+    tiles[i] = _.pick(tiles[i], ['pos']);
+    tiles[i] = tiles[i].pos;
+  }
+  tiles = _.uniqWith(tiles, function(a,b){return a.x==b.x && a.y==b.y});
+  // collect masters and subtract it from placed tile positions
+  for(let i=0; i<players.length; i++) fF.push(players[i].workers.master.pos);
+  fF = _.differenceWith(tiles, fF, function(a,b){return a.x==b.x && a.y==b.y});
+  console.warn('tiles which slaves can move to:');
+  console.log(fF);
+  return(fF);
 }
 
 function changePlayerStats(p, v, s) {  // playerNo, whichStat, statNo or value (c/s/q)
@@ -326,8 +341,14 @@ function playACard(p) {
   }
 }
 
+function addSlave(p) {
+  // rule: every slave addition costs a less income object for the master
+  const slaveNames = ['slaveOne', 'slaveTwo', 'slaveThree'];
+
+}
+
 function flipWorker(p) {
-  let buff = players[p].workers.slave;
-  players[p].workers.slave = players[p].workers.master;
+  let buff = players[p].workers.slaveOne;
+  players[p].workers.slaveOne = players[p].workers.master;
   players[p].workers.master = buff;
 }

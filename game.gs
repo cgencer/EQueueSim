@@ -4,11 +4,9 @@ var actionTiles = [];
 var dones = [];
 let maxRow = 150;
 let numPlayers = 4;
-const FLAGS_START_COL = 19;
 
 function initGame(){
-  actionTiles = initActionTiles(SpreadsheetApp.getActiveSpreadsheet());
-  var players = initPlayerDecks(SpreadsheetApp.getActiveSpreadsheet(), shuffleCardIndexes(maxRow), numPlayers);
+  var players = initPlayerDecks(SpreadsheetApp.getActiveSpreadsheet(), shuffleCardIndexes(maxRow), initActionTiles(SpreadsheetApp.getActiveSpreadsheet()), numPlayers);
 
 /*
 playACard(0);
