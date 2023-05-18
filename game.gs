@@ -16,6 +16,8 @@ playACard(3);
 playACard(0);
 playACard(1);
 */
+createDumpster();
+
 console.log(players);
 
 }
