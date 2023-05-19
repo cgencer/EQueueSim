@@ -137,6 +137,49 @@ function convertR1C1toA1 (ref) {
   return columnStr + row
 }
 
+/**
+ * Write to multiple, disjoint data ranges.
+ * @param {string} spreadsheetId The spreadsheet ID to write to.
+ * @see https://developers.google.com/sheets/api/reference/rest/v4/spreadsheets.values/batchUpdate
+ */
+function writeToMultipleRanges(spreadsheetId = yourspreadsheetId) {
+  // Specify some values to write to the sheet.
+  const columnAValues = [
+    ['Item', 'Wheel', 'Door', 'Engine']
+  ];
+  const rowValues = [
+    ['Cost', 'Stocked', 'Ship Date'],
+    ['$20.50', '4', '3/1/2016']
+  ];
+
+  const request = {
+    'valueInputOption': 'USER_ENTERED',
+    'data': [
+      {
+        'range': 'Sheet1!A1:A4',
+        'majorDimension': 'COLUMNS',
+        'values': columnAValues
+      },
+      {
+        'range': 'Sheet1!B1:D2',
+        'majorDimension': 'ROWS',
+        'values': rowValues
+      }
+    ]
+  };
+  try {
+    const response = Sheets.Spreadsheets.Values.batchUpdate(request, spreadsheetId);
+    if (response) {
+      console.log(response);
+      return;
+    }
+    console.log('response null');
+  } catch (e) {
+    // TODO (developer) - Handle  exception
+    console.log('Failed with error %s', e.message);
+  }
+}
+
 function convertRangeToCsvFile_(csvFileName) {
   // Get the selected range in the spreadsheet
   var ws = SpreadsheetApp.getActiveSpreadsheet().getActiveSelection();
@@ -268,11 +311,90 @@ function createDumpster () {
   }
   lastSheet = allSheets[allSheets.length-1];
   lastSheet.setName('@'+hour+':'+minutes);
-  lastSheet.deleteRows(2, 5);
+  lastSheet.deleteRows(2, lastSheet.getMaxRows()-2);
   ssFile.setActiveSheet(lastSheet).getRange('A2:A2').activate();
+  return lastSheet;
+}
+
+// helper function to check any flag
+function isFlagSet (actual, expected) {
+  const flag = actual & expected;
+  return flag === expected;
+};
+
+
+function logGameStats(sheet, playerObj, setOfVals) {
+  let playerNo = playerObj.index;
+  let playerCols = [fromA1Notation('A1').column, 
+                    fromA1Notation('M1').column, 
+                    fromA1Notation('Y1').column, 
+                    fromA1Notation('AK1').column];
+  let cols = ['info', 'stats', 'calmness', 'stress', 
+  'hindrance', '', '', '', '', 'poison', '', ''];
+
+  playerNo = playerObj.index;
+  let newRow = sheet.getLastRow() + 1;
+  _.each(setOfVals, function(v, k, coll){
+    var i = 0;
+    if('info'==k){
+      if(_.isArray(v)){
+        if(v.length==1) v = _.fill(Array(4), v[0]);
+        console.log(v);
+        _.each(v, function(c){
+          let loc = playerCols[i++];
+          console.log('>>> '+newRow+':'+loc+': '+c);
+          sheet.getRange(newRow, loc).setValue(c);
+        });
+      }
+    }
+    playerNo = playerObj.index;
+    var i = 0;
+    if('stats'==k){
+      if(_.isArray(v)){
+        if(v.length==1) v = _.fill([], v[0], 4);
+        _.each(v, function(c){
+          let loc = playerCols[i++];
+          console.log('>>> '+newRow+':'+(loc+1)+': '+c);
+          sheet.getRange(newRow, loc+1).setValue(c);
+        });
+      }
+    }
+    playerNo = playerObj.index;
+    var i = 0;
+    if('hindrance'==k){
+      let loc = playerCols[i++];
+      sheet.getRange(newRow, loc + 8).setValue((isFlagSet(v, 16) ? 'X' : ''));
+      sheet.getRange(newRow, loc + 7).setValue((isFlagSet(v, 8) ? 'X' : ''));
+      sheet.getRange(newRow, loc + 6).setValue((isFlagSet(v, 4) ? 'X' : ''));
+      sheet.getRange(newRow, loc + 5).setValue((isFlagSet(v, 2) ? 'X' : ''));
+      sheet.getRange(newRow, loc + 4).setValue((isFlagSet(v, 1) ? 'X' : ''));
+    }
+    playerNo = playerObj.index;
+    var i = 0;
+    if('poison'==k){
+      let loc = playerCols[i++];
+      sheet.getRange(newRow, loc + 11).setValue((isFlagSet(v, 4) ? 'X' : ''));
+      sheet.getRange(newRow, loc + 10).setValue((isFlagSet(v, 2) ? 'X' : ''));
+      sheet.getRange(newRow, loc +  9).setValue((isFlagSet(v, 1) ? 'X' : ''));
+    }
+  });
 
 }
 
+function logToSheet(url, message) {
+  var formSheet = SpreadsheetApp.getActiveSpreadsheet().getSheets()[1];
+  
+  // We wish to see what is the last response from the 'mute alerts' form
+  var toStopEmailsRow = formSheet.getLastRow();
+  var toStopEmails = formSheet.getRange(toStopEmailsRow, 2).getValue();  
+  
+  // The logger sheet
+  var sheet = SpreadsheetApp.getActiveSpreadsheet().getSheets()[0];
+  var row   = sheet.getLastRow() + 1;    
+  var time  = new Date();  
+  sheet.getRange(row,1).setValue(time);
+  sheet.getRange(row,2).setValue(message + " : " + url);
+}
 
 
 
