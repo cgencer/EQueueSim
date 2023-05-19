@@ -342,7 +342,6 @@ function logGameStats(sheet, playerObj, setOfVals) {
         console.log(v);
         _.each(v, function(c){
           let loc = playerCols[i++];
-          console.log('>>> '+newRow+':'+loc+': '+c);
           sheet.getRange(newRow, loc).setValue(c);
         });
       }
@@ -354,15 +353,13 @@ function logGameStats(sheet, playerObj, setOfVals) {
         if(v.length==1) v = _.fill([], v[0], 4);
         _.each(v, function(c){
           let loc = playerCols[i++];
-          console.log('>>> '+newRow+':'+(loc+1)+': '+c);
           sheet.getRange(newRow, loc+1).setValue(c);
         });
       }
     }
     playerNo = playerObj.index;
-    var i = 0;
     if('hindrance'==k){
-      let loc = playerCols[i++];
+      let loc = playerCols[playerNo];
       sheet.getRange(newRow, loc + 8).setValue((isFlagSet(v, 16) ? 'X' : ''));
       sheet.getRange(newRow, loc + 7).setValue((isFlagSet(v, 8) ? 'X' : ''));
       sheet.getRange(newRow, loc + 6).setValue((isFlagSet(v, 4) ? 'X' : ''));
@@ -370,9 +367,8 @@ function logGameStats(sheet, playerObj, setOfVals) {
       sheet.getRange(newRow, loc + 4).setValue((isFlagSet(v, 1) ? 'X' : ''));
     }
     playerNo = playerObj.index;
-    var i = 0;
     if('poison'==k){
-      let loc = playerCols[i++];
+      let loc = playerCols[playerNo];
       sheet.getRange(newRow, loc + 11).setValue((isFlagSet(v, 4) ? 'X' : ''));
       sheet.getRange(newRow, loc + 10).setValue((isFlagSet(v, 2) ? 'X' : ''));
       sheet.getRange(newRow, loc +  9).setValue((isFlagSet(v, 1) ? 'X' : ''));

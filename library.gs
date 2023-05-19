@@ -27,6 +27,7 @@ function decodeSheetRow(i, sx, cx) {
   const colLevel = fromA1Notation('F1');
   const colCost = fromA1Notation('D1');
   const colPay = fromA1Notation('Q1');
+  const colTitle = fromA1Notation('BP1');
   let xpp = cx[colXPP.column-1];
   const xtal = sx[colXtal.column-1];
   if (sx[colPay] == true) xtal *= -1;
@@ -35,6 +36,7 @@ function decodeSheetRow(i, sx, cx) {
     no: i,
     id: sx[0],
     type: 'card',
+    title: sx[colTitle.column-1],
     xp: Number(cx[colXP.column-1]),
     xpp: Number(xpp.substr(2)),     // remove [/-slash] from cell content
     cost: cx[colCost.column-1],
@@ -49,26 +51,37 @@ function decodeSheetRow(i, sx, cx) {
 }
 
 
-function chooseTiles(aT, players) {
+function chooseTiles(log, aT, playerObj) {
 
   let sT = _.shuffle(_.concat(
     _.filter(aT, { 'players': 2, 'stage': '*' }), 
     _.filter(aT, { 'players': 2, 'stage': 'wood' })
   ));
   let vp = [];
+  let lines = [];
+  let theTile;
   let nm = ['master', 'slaveOne'];
-  for(let p=0; p<players; p++){
+  for(let p=0; p<4; p++){
     vp[p] = {};
+    var lineP = '';
     for(let w=0; w<2; w++){
-      vp[p][nm[w]]=sT.pop();
+      theTile = sT.pop();
+      vp[p][nm[w]] = theTile;
+      lineP += (nm[w]+' on '+theTile.id + ' ('+theTile.title+') '+(w==0?'\n':''));
     }
+    lines.push(lineP);
+    lineP = ';'
   }
+  logGameStats(log, playerObj, {
+    info: ['places workers'], 
+    stats: lines
+  });
   return vp;
 }
 
 function initPlayerDecks(sheet, log, deck, actionTiles, numplayers) {
   let players = [];
-  let copySheet = sheet.getRange('Sheet1!A2:BL' + maxRow).getValues();
+  let copySheet = sheet.getRange('Sheet1!A2:BZ' + maxRow).getValues();
   let copyCalc = sheet.getRange('calc!A2:O' + maxRow).getValues();
   for (let j = 0; j < numplayers; j++) {
     players[j] = {
@@ -105,7 +118,7 @@ function initPlayerDecks(sheet, log, deck, actionTiles, numplayers) {
     ]
   });
 
-  let tileSelection = chooseTiles(actionTiles, numplayers);
+  let tileSelection = chooseTiles(log, actionTiles, players[0]);
 
   for (let x = 0; x < numplayers; x++) {
     players[x].workers = tileSelection[x];
@@ -142,8 +155,8 @@ function initActionTiles(sheet) {
   let grid = new BHex.Grid(8);
   grid.initMarkers();
 
-  let actionSheet = sheet.getRange('Sheet1!A200:BL227').getValues();
-  let actionCalcSheet = sheet.getRange('calc!A200:BL227').getValues();
+  let actionSheet = sheet.getRange('Sheet1!A200:BZ227').getValues();
+  let actionCalcSheet = sheet.getRange('calc!A200:BZ227').getValues();
   let posBuffer = new BHex.Axial(0,0);
   let coin = true;
 
@@ -162,7 +175,7 @@ function initActionTiles(sheet) {
 
     decoded.side = (tileIndex % 2 == 0) ? coin : !coin;
     actionTiles.push(
-      _.pick(decoded, ['pos', 'x', 'y', 'type', 'side', 'xp', 'no', 'id', 'income', 'outgo', 'players', 'bonuscard', 'stage']));
+      _.pick(decoded, ['pos', 'x', 'y', 'type', 'side', 'xp', 'no', 'id', 'income', 'outgo', 'players', 'bonuscard', 'stage', 'title']));
     console.info('>>> placing the tile '+decoded.id+' onto grid '+grid.getHexAt(posBuffer).getKey()+' with side '+decoded.side);
 
     if(tileIndex % 2 == 1 && tileIndex<actionSheet.length){     // every 2 half of a tile is @same location
