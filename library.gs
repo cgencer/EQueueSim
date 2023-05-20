@@ -17,72 +17,108 @@
  *                      outgo:    bit-masked flags... higher 5 bits (xxxxx000) are hiddrances 5-1, 
  *                                                    lower 3 bits (00000xxx) are poisons 3-1
  */
-function decodeSheetRow(i, sx, cx) {
-  const FLAGS_START_COL = fromA1Notation('T1');
-  let row = _.slice(sx, FLAGS_START_COL);       // this is only the flags of income/outgo part
-  const colXP = fromA1Notation('A1');           // XP
-  const colXPP = fromA1Notation('B1');          // XPP
-  const colStage = fromA1Notation('BJ1');
-  const colXtal = fromA1Notation('R1');
-  const colLevel = fromA1Notation('F1');
-  const colCost = fromA1Notation('D1');
-  const colPay = fromA1Notation('Q1');
-  const colTitle = fromA1Notation('BP1');
-  let xpp = cx[colXPP.column-1];
-  const xtal = sx[colXtal.column-1];
-  if (sx[colPay] == true) xtal *= -1;
+function decodeSheetRow(i, srcValues, calcValues) {
+  let xpp, xtal, io, obj;
+  if(_.isArray(srcValues) && _.isArray(calcValues)) {
+    io = _.slice(srcValues, fromA1Notation('T1').column);     // i/o flags 
+    const colStage =  fromA1Notation('BJ1').column;
+    const colXtal =   fromA1Notation('R1').column;
+    const colLevel =  fromA1Notation('F1').column;
+    const colPay =    fromA1Notation('Q1').column;
+    const colTitle =  fromA1Notation('BP1').column;
 
-  var obj = {
-    no: i,
-    id: sx[0],
-    type: 'card',
-    title: sx[colTitle.column-1],
-    xp: Number(cx[colXP.column-1]),
-    xpp: Number(xpp.substr(2)),     // remove [/-slash] from cell content
-    cost: cx[colCost.column-1],
-    stage: sx[colStage.column-1],
-    lvl: sx[colLevel.column-1],
-    q: Number(xtal)+10,             // to sort also negatives, deduce this on usage
-    income: (row[6] || row[11]) << 7 | (row[5] || row[10]) << 6 | (row[4] || row[9]) << 5 | (row[3] || row[8]) << 4 | (row[2] || row[7]) << 3 | row[1] << 1 | row[0],
-    outgo: // higher 5 bits are guardians, lower 3 bits are poisons
-      (row[17] || row[22]) << 7 | (row[18] || row[23]) << 6 | (row[19] || row[24]) << 5 | (row[20] || row[25]) << 4 | (row[21] || row[26]) << 3 | (row[29] || row[32] || row[35]) | (row[28] || row[31] || row[34]) << 1 | (row[27] || row[30] || row[33]) << 2
-  };
+    const colCost =   fromA1Notation('D1').column;
+    const colStr =    fromA1Notation('F1').column;
+    const colXP =     fromA1Notation('A1').column;            // XP
+    const colXPP =    fromA1Notation('B1').column;            // XPP
+
+    if(!_.isUndefined(calcValues) && _.isArray(calcValues) && calcValues.length > colXPP)
+      xpp = calcValues[colXPP-1];
+
+    xtal = srcValues[colXtal-1];
+  /*
+    if(!_.isUndefined(xtal) && !_.isUndefined(srcValues[colPay]))
+      xtal *= (srcValues[colPay] == true) ? -1 : 1;
+  */
+    obj = {
+      no: i,
+      id: srcValues[0],
+      type: 'card',
+      title:  srcValues[colTitle-1],
+      xp:     Number(calcValues[colXP-1]),
+      xpp:    Number(xpp.substr(2)),     // remove [/-slash] from cell content
+      cost:   calcValues[colCost-1],
+      str:    calcValues[colStr-1],
+      stage:  srcValues[colStage-1],
+      lvl:    srcValues[colLevel-1],
+      q:      Number(xtal)+10,           // to sort also negatives, deduce this on usage
+      income: (io[6] || io[11]) << 7 | 
+              (io[5] || io[10]) << 6 | 
+              (io[4] ||  io[9]) << 5 | 
+              (io[3] ||  io[8]) << 4 | 
+              (io[2] ||  io[7]) << 3 |
+              // skipping 0x100 as there are only 3 poisons (0x11) 
+              io[1] << 1 | 
+              io[0],
+      outgo: 
+      // higher 5 bits are guardians, lower 3 bits are poisons
+              (io[17] || io[22]) << 7 | 
+              (io[18] || io[23]) << 6 | 
+              (io[19] || io[24]) << 5 | 
+              (io[20] || io[25]) << 4 | 
+              (io[21] || io[26]) << 3 | 
+              (io[27] || io[30] || io[33]) << 2 |
+              (io[28] || io[31] || io[34]) << 1 | 
+              (io[29] || io[32] || io[35])
+    };
+  }
   return (obj);
 }
 
 
 function chooseTiles(log, aT, playerObj) {
-
+  // filter out bound tiles, which appear as doubles
   let sT = _.shuffle(_.concat(
-    _.filter(aT, { 'players': 2, 'stage': '*' }), 
-    _.filter(aT, { 'players': 2, 'stage': 'wood' })
+    _.filter(aT, { players: 2, side: true, stage: '*' }), 
+    _.filter(aT, { players: 2, side: true, stage: 'wood' })
   ));
   let vp = [];
   let lines = [];
+  let usedTiles = [];
   let theTile;
   let nm = ['master', 'slaveOne'];
-  for(let p=0; p<4; p++){
-    vp[p] = {};
-    var lineP = '';
-    for(let w=0; w<2; w++){
+  // first select tiles for masters w/o colliding & tile-doubling
+  // the slaves are placed onto any tiles w/o above priority-filters
+  // - a players slave cant be placed where he has a master
+  // - 
+  for(let w=0; w<2; w++){
+    for(let p=0; p<4; p++){
+      vp[p] = {};
+      var lineP = '';
       theTile = sT.pop();
+//      sT = _.reject(sT, { sibling: theTile.id });
+      usedTiles.push(theTile.id);
       vp[p][nm[w]] = theTile;
-      lineP += (nm[w]+' on '+theTile.id + ' ('+theTile.title+') '+(w==0?'\n':''));
+      lineP += (nm[w]+' on '+theTile.id + ' ('+theTile.title+') @' +
+      theTile.pos.x + 'x' + theTile.pos.y +(w==0?'\n':''));
     }
-    lines.push(lineP);
+    lines.push(_.replace(lineP, 'slaveOne', 'slave'));
     lineP = ';'
+    sT = _.shuffle(_.concat(
+      _.filter(aT, { players: 2, side: true }),
+      _.filter(aT, { players: 3, side: true })));
+    for(let k=0; k<usedTiles.length; k++){
+      sT = _.reject(sT, { id: usedTiles[k] });
+    }
   }
-  logGameStats(log, playerObj, {
-    info: ['places workers'], 
-    stats: lines
-  });
+  logGameStats(log, playerObj, {info: ['places workers'], stats: lines});
   return vp;
 }
 
 function initPlayerDecks(sheet, log, deck, actionTiles, numplayers) {
   let players = [];
-  let copySheet = sheet.getRange('Sheet1!A2:BZ' + maxRow).getValues();
-  let copyCalc = sheet.getRange('calc!A2:O' + maxRow).getValues();
+  let copySheet = sheet.getRange('Sheet1!A2:BP' + sheet.getLastRow()).getValues();
+  let copyCalc = sheet.getRange('calc!A2:O' + sheet.getLastRow()).getValues();
   for (let j = 0; j < numplayers; j++) {
     players[j] = {
       index: j,
@@ -131,9 +167,9 @@ function initPlayerDecks(sheet, log, deck, actionTiles, numplayers) {
   return players;
 }
 
-function shuffleCardIndexes() {
+function shuffleCardIndexes(n) {
   var arr = [];
-  for (let i = 0; i < 149; i++) {
+  for (let i = 0; i < n-1; i++) {
     arr[i] = i + 1;
   }
   return _.shuffle(arr);
@@ -162,12 +198,23 @@ function initActionTiles(sheet) {
 
   const colPlayersNum = fromA1Notation('BI1');
   const colStage = fromA1Notation('BJ1');
+  let sibA, sibB, decoded, decoFwd;
 
   for(let tileIndex=0; tileIndex<actionSheet.length; tileIndex++){
-    let decoded = decodeSheetRow(tileIndex, actionSheet[tileIndex], actionCalcSheet[tileIndex]);
+    decoded = decodeSheetRow(tileIndex, actionSheet[tileIndex], actionCalcSheet[tileIndex]);
+    if(tileIndex<actionSheet.length-1){
+      decoFwd = decodeSheetRow(tileIndex+1, actionSheet[tileIndex+1], actionCalcSheet[tileIndex+1]);
+    }
     decoded.pos = _.pick(posBuffer, ['x', 'y']);
     decoded.type = 'tile';
     decoded.players = actionSheet[tileIndex][colPlayersNum.column-1];
+    if(tileIndex % 2 == 0 && _.isObject(decoFwd)){
+      decoded.sibling = decoFwd.id;
+      sibA = decoded.id;
+    }
+    if(tileIndex % 2 == 1){
+      decoded.sibling = sibA;
+    }
     if(decoded.players=='') decoded.players = 0;
 
     decoded.stage = actionSheet[tileIndex][colStage.column-1];
@@ -175,19 +222,23 @@ function initActionTiles(sheet) {
 
     decoded.side = (tileIndex % 2 == 0) ? coin : !coin;
     actionTiles.push(
-      _.pick(decoded, ['pos', 'x', 'y', 'type', 'side', 'xp', 'no', 'id', 'income', 'outgo', 'players', 'bonuscard', 'stage', 'title']));
+      _.pick(decoded, ['pos', 'x', 'y', 'type', 'side', 'xp', 'no', 'id', 'income', 'outgo', 'players', 'bonuscard', 'stage', 'title', 'sibling']));
     console.info('>>> placing the tile '+decoded.id+' onto grid '+grid.getHexAt(posBuffer).getKey()+' with side '+decoded.side);
 
     if(tileIndex % 2 == 1 && tileIndex<actionSheet.length){     // every 2 half of a tile is @same location
       // pick a random neighbor for the new tile from neighbors only
       coin = _.random(0, 9999) % 2 == 0 ? false : true;
+      // this patches up to ensure these tiles are selected initially, other tiles randomly...
+      if(decoded.players == 2 || decoded.stage == 'wood' || decoded.stage == '*')
+        coin = true;
       posBuffer = grid.placeAtBorder(posBuffer);
+
       if(!posBuffer){break;}
 //      console.log('flushing buffer with '+grid.getHexAt(posBuffer).getKey());
     }
   }
-  return actionTiles;
 //  console.log(actionTiles);
+  return actionTiles;
 }
 
 /**
@@ -204,17 +255,20 @@ function initActionTiles(sheet) {
 function movableFields(tiles, masters, slaves) {
   let fF = [];
   for(let i=0; i<tiles.length; i++) {
-    tiles[i] = _.pick(tiles[i], ['pos']);
-    tiles[i] = tiles[i].pos;
+    tiles[i] = _.pick(tiles[i], ['pos']).pos;
   }
   tiles = _.uniqWith(tiles, function(a,b){return a.x==b.x && a.y==b.y});
   // collect masters and subtract it from placed tile positions
-  for(let i=0; i<masters.length; i++) fF.push(masters[i].workers.master.pos);
+  for(let i=0; i<masters.length; i++) {
+    if(_.isObject(masters[i].workers.master))
+      if(_.isObject(masters[i].workers.master.pos))
+        fF.push(masters[i].workers.master.pos);
+  }
   fF = _.differenceWith(tiles, fF, function(a,b){return a.x==b.x && a.y==b.y});
   if(slaves.length>0)
     fF = _.differenceWith(fF, slaves, function(a,b){return a.x==b.x && a.y==b.y});
 
-  console.warn('tiles which slaves can move to:');
+  console.warn('tiles where slaves can move to:');
   console.log(fF);
   return(fF);
 }
