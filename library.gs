@@ -95,7 +95,7 @@ function chooseTiles(log, aT, playerObj) {
       theTile = sT.pop();
 //      sT = _.reject(sT, { sibling: theTile.id });
       usedTiles.push(theTile.id);
-      vp[p][((p<4)?'master':'slaveOne')] = theTile;
+      vp[p%4][((p<4)?'master':'slaveOne')] = theTile;
       status = ((p<4)?'master':'slave')+' on '+theTile.id + ' ('+theTile.title+') @' +
       theTile.pos.x + 'x' + theTile.pos.y +((p<4)?'\n':'');
       lines[p%4] += status;
