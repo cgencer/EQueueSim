@@ -83,35 +83,32 @@ function chooseTiles(log, aT, playerObj) {
     _.filter(aT, { players: 2, side: true, stage: 'wood' })
   ));
   let vp = [];
-  let lines = [];
+  let lines = ['','','',''];
   let usedTiles = [];
-  let theTile;
-  let nm = ['master', 'slaveOne'];
+  let theTile, status;
   // first select tiles for masters w/o colliding & tile-doubling
   // the slaves are placed onto any tiles w/o above priority-filters
   // - a players slave cant be placed where he has a master
   // - 
-  for(let w=0; w<2; w++){
-    for(let p=0; p<4; p++){
+    for(let p=0; p<4*2; p++){
       vp[p] = {};
-      var lineP = '';
       theTile = sT.pop();
 //      sT = _.reject(sT, { sibling: theTile.id });
       usedTiles.push(theTile.id);
-      vp[p][nm[w]] = theTile;
-      lineP += (nm[w]+' on '+theTile.id + ' ('+theTile.title+') @' +
-      theTile.pos.x + 'x' + theTile.pos.y +(w==0?'\n':''));
+      vp[p][((p<4)?'master':'slaveOne')] = theTile;
+      status = ((p<4)?'master':'slave')+' on '+theTile.id + ' ('+theTile.title+') @' +
+      theTile.pos.x + 'x' + theTile.pos.y +((p<4)?'\n':'');
+      lines[p%4] += status;
+      if(p==3){
+        sT = _.shuffle(_.concat(
+          _.filter(aT, { players: 2, side: true }),
+          _.filter(aT, { players: 3, side: true })));
+        for(let k=0; k<usedTiles.length; k++){
+          sT = _.reject(sT, { id: usedTiles[k] });
+        }
+      }
     }
-    lines.push(_.replace(lineP, 'slaveOne', 'slave'));
-    lineP = ';'
-    sT = _.shuffle(_.concat(
-      _.filter(aT, { players: 2, side: true }),
-      _.filter(aT, { players: 3, side: true })));
-    for(let k=0; k<usedTiles.length; k++){
-      sT = _.reject(sT, { id: usedTiles[k] });
-    }
-  }
-  logGameStats(log, playerObj, {info: ['places workers'], stats: lines});
+  logGameStats(log, 0, {info: ['places workers'], stats: lines});
   return vp;
 }
 

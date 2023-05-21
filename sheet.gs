@@ -323,8 +323,8 @@ function isFlagSet (actual, expected) {
 };
 
 
-function logGameStats(sheet, playerObj, setOfVals) {
-  let playerNo = playerObj.index;
+function logGameStats(sheet, player, setOfVals) {
+  let playerNo = _.isInteger(player) ? player : player.index;
   let playerCols = [fromA1Notation('A1').column, 
                     fromA1Notation('M1').column, 
                     fromA1Notation('Y1').column, 
@@ -332,21 +332,20 @@ function logGameStats(sheet, playerObj, setOfVals) {
   let cols = ['info', 'stats', 'calmness', 'stress', 
   'hindrance', '', '', '', '', 'poison', '', ''];
 
-  playerNo = playerObj.index;
+  playerNo = _.isInteger(player) ? player : player.index;
   let newRow = sheet.getLastRow() + 1;
   _.each(setOfVals, function(v, k, coll){
     var i = 0;
     if('info'==k){
       if(_.isArray(v)){
         if(v.length==1) v = _.fill(Array(4), v[0]);
-        console.log(v);
         _.each(v, function(c){
           let loc = playerCols[i++];
           sheet.getRange(newRow, loc).setValue(c);
         });
       }
     }
-    playerNo = playerObj.index;
+    playerNo = _.isInteger(player) ? player : player.index;
     var i = 0;
     if('stats'==k){
       if(_.isArray(v)){
@@ -357,7 +356,7 @@ function logGameStats(sheet, playerObj, setOfVals) {
         });
       }
     }
-    playerNo = playerObj.index;
+    playerNo = _.isInteger(player) ? player : player.index;
     if('hindrance'==k){
       let loc = playerCols[playerNo];
       sheet.getRange(newRow, loc + 8).setValue((isFlagSet(v, 16) ? 'X' : ''));
@@ -366,7 +365,7 @@ function logGameStats(sheet, playerObj, setOfVals) {
       sheet.getRange(newRow, loc + 5).setValue((isFlagSet(v, 2) ? 'X' : ''));
       sheet.getRange(newRow, loc + 4).setValue((isFlagSet(v, 1) ? 'X' : ''));
     }
-    playerNo = playerObj.index;
+    playerNo = _.isInteger(player) ? player : player.index;
     if('poison'==k){
       let loc = playerCols[playerNo];
       sheet.getRange(newRow, loc + 11).setValue((isFlagSet(v, 4) ? 'X' : ''));
