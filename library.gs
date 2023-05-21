@@ -13,8 +13,8 @@
  *                      cost:     cost-value
  *                      lvl:      level of card for set-collection
  *                      q:        crystal cost
- *                      income:   bit-masked flags for the 5-hindrances and 3-poisons 
- *                      outgo:    bit-masked flags... higher 5 bits (xxxxx000) are hiddrances 5-1, 
+ *                      income:   bit-masked flags for the 5-hindrances and 3-antidotes 
+ *                      outgo:    bit-masked flags... higher 5 bits (xxxxx000) are hindrances 5-1, 
  *                                                    lower 3 bits (00000xxx) are poisons 3-1
  */
 function decodeSheetRow(i, srcValues, calcValues) {
@@ -52,17 +52,19 @@ function decodeSheetRow(i, srcValues, calcValues) {
       stage:  srcValues[colStage-1],
       lvl:    srcValues[colLevel-1],
       q:      Number(xtal)+10,           // to sort also negatives, deduce this on usage
-      income: (io[6] || io[11]) << 7 | 
+      calm:   ((io[13] && io[12]) ? 2 : ((io[13] || io[12]) ? 1 : 0)),
+      stress: ((io[14] && io[15] && io[16]) ? 3 : ((io[14] && io[15]) ? 2 : (io[14] ? 1 : 0))),
+      income: (io[6] || io[11]) << 7 |   // minus-hindrances
               (io[5] || io[10]) << 6 | 
               (io[4] ||  io[9]) << 5 | 
               (io[3] ||  io[8]) << 4 | 
               (io[2] ||  io[7]) << 3 |
-              // skipping 0x100 as there are only 3 poisons (0x11) 
+              // skipping 0x100 as there are only 3 antidotes (0x11) 
               io[1] << 1 | 
               io[0],
       outgo: 
-      // higher 5 bits are guardians, lower 3 bits are poisons
-              (io[17] || io[22]) << 7 | 
+      // higher 5 bits are hindrances, lower 3 bits are poisons
+              (io[17] || io[22]) << 7 |   // hindrances
               (io[18] || io[23]) << 6 | 
               (io[19] || io[24]) << 5 | 
               (io[20] || io[25]) << 4 | 
@@ -76,7 +78,7 @@ function decodeSheetRow(i, srcValues, calcValues) {
 }
 
 
-function chooseTiles(log, aT, playerObj) {
+function chooseTiles(log, aT) {
   // filter out bound tiles, which appear as doubles
   let sT = _.shuffle(_.concat(
     _.filter(aT, { players: 2, side: true, stage: '*' }), 
@@ -96,8 +98,10 @@ function chooseTiles(log, aT, playerObj) {
 //      sT = _.reject(sT, { sibling: theTile.id });
       usedTiles.push(theTile.id);
       vp[p%4][((p<4)?'master':'slaveOne')] = theTile;
+      let newPowers = activateTilePowers(p);
       status = ((p<4)?'master':'slave')+' on '+theTile.id + ' ('+theTile.title+') @' +
       theTile.pos.x + 'x' + theTile.pos.y +((p<4)?'\n':'');
+      console.log(status);
       lines[p%4] += status;
       if(p==3){
         sT = _.shuffle(_.concat(
@@ -108,28 +112,45 @@ function chooseTiles(log, aT, playerObj) {
         }
       }
     }
-  logGameStats(log, 0, {info: ['places workers'], stats: lines});
+  logGameStats(log, 0, {
+    info: ['places workers'], 
+    stats: lines, 
+    hindrance: 25
+  });
+  console.warn('selected tiles are:');
+  console.log(vp);
   return vp;
+}
+
+function activateTilePowers(player) {
+//  players[player].stats.h &= players[player].workers.master.income >> 3;
+//  return players[player].stats.h;
 }
 
 function initPlayerDecks(sheet, log, deck, actionTiles, numplayers) {
   let players = [];
   let copySheet = sheet.getRange('Sheet1!A2:BP' + sheet.getLastRow()).getValues();
   let copyCalc = sheet.getRange('calc!A2:O' + sheet.getLastRow()).getValues();
+
+  let tileSelection = chooseTiles(log, actionTiles);
+
   for (let j = 0; j < numplayers; j++) {
+
     players[j] = {
       index: j,
       deck: [],
       deckIds: [],
       activated: [],
-      workers: [],
+      workers: tileSelection[j],
       stats: {
         q: 6,       // crystals
         xp: 0,
         c: 0,       // calmness
         s: 0,       // stress
         h: 0,       // hindrances
-        p: 0        // poisons
+        sh: 0,      // saved hindrance-deductions
+        p: 0,       // poisons
+        sp: 0       // saved antidotes
       }
     };
     for (let i = 0; i < 6; i++) {
@@ -139,6 +160,12 @@ function initPlayerDecks(sheet, log, deck, actionTiles, numplayers) {
       players[j].deck.push(theCard);
       players[j].deckIds.push(theCard.id);
     }
+
+    console.warn('workers:');
+    console.log(players[j].workers.master.income);
+
+    players[j].stats.h |= players[j].workers.master.outgo >> 3;
+    players[j].stats.sh |= players[j].workers.master.income >> 3;
   }
 
   logGameStats(log, players[0], {
@@ -150,8 +177,6 @@ function initPlayerDecks(sheet, log, deck, actionTiles, numplayers) {
         players[3].deckIds.join(';')
     ]
   });
-
-  let tileSelection = chooseTiles(log, actionTiles, players[0]);
 
   for (let x = 0; x < numplayers; x++) {
     players[x].workers = tileSelection[x];

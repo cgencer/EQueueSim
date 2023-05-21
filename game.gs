@@ -2,12 +2,15 @@ var _ = LodashGS.load();
 
 var actionTiles = [];
 var dones = [];
+var players = [];
+let tiles = [];
 let maxRow = 150;
 let numPlayers = 4;
 let logSheet = createDumpster();
 
 function initGame(){
-  var players = initPlayerDecks(SpreadsheetApp.getActiveSpreadsheet(), logSheet, shuffleCardIndexes(maxRow), initActionTiles(SpreadsheetApp.getActiveSpreadsheet()), numPlayers);
+  tiles = initActionTiles(SpreadsheetApp.getActiveSpreadsheet());
+  players = initPlayerDecks(SpreadsheetApp.getActiveSpreadsheet(), logSheet, shuffleCardIndexes(maxRow), tiles, numPlayers);
 
 /*
 playACard(0);
