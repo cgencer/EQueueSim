@@ -1,6 +1,8 @@
 # EQueueSim
 This is the simulator-code running on GoogleSheets Apps-script for my upcoming boardgame EQueue (offline game)
 
+[![Example card data sheet](https://raw.githubusercontent.com/cgencer/EQueueSim/main/screenshots/card-data-example.png)]
+
 This project is tied quite deeply into the GoogleSheet where I keep all my card-parameters for over 200 cards and action-tiles.
 I will soon also create a simple dummy-sheet to show how it is used to calculate all possibilities, strength curves of each item, etc.
 
