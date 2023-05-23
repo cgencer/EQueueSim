@@ -78,70 +78,63 @@ function decodeSheetRow(i, srcValues, calcValues) {
 }
 
 
-function chooseTiles(log, aT) {
-  // filter out bound tiles, which appear as doubles
-  let sT = _.shuffle(_.concat(
-    _.filter(aT, { players: 2, side: true, stage: '*' }), 
-    _.filter(aT, { players: 2, side: true, stage: 'wood' })
-  ));
+function chooseTiles(log, placedTiles) {
   let vp = [];
   let lines = ['','','',''];
   let usedTiles = [];
+  let outgos = [];
+  let incomes = [];
   let theTile, status;
+  let sT = _.shuffle(_.concat(
+    _.filter(placedTiles, { players: 2, side: true, stage: '*' }), 
+    _.filter(placedTiles, { players: 2, side: true, stage: 'wood' })
+  ));
+
   // first select tiles for masters w/o colliding & tile-doubling
   // the slaves are placed onto any tiles w/o above priority-filters
   // - a players slave cant be placed where he has a master
   // - 
-    for(let p=0; p<4*2; p++){
-      vp[p] = {};
-      theTile = sT.pop();
-//      sT = _.reject(sT, { sibling: theTile.id });
-      usedTiles.push(theTile.id);
-      vp[p%4][((p<4)?'master':'slaveOne')] = theTile;
-      let newPowers = activateTilePowers(p);
-      status = ((p<4)?'master':'slave')+' on '+theTile.id + ' ('+theTile.title+') @' +
-      theTile.pos.x + 'x' + theTile.pos.y +((p<4)?'\n':'');
-      console.log(status);
-      lines[p%4] += status;
-      if(p==3){
-        sT = _.shuffle(_.concat(
-          _.filter(aT, { players: 2, side: true }),
-          _.filter(aT, { players: 3, side: true })));
-        for(let k=0; k<usedTiles.length; k++){
-          sT = _.reject(sT, { id: usedTiles[k] });
-        }
+  for(let p=0; p<4*2; p++){
+    vp[ p%4 ] = {};
+    theTile = sT.pop();
+    usedTiles.push(theTile.id);
+    vp[ p%4 ][ ((p<4)?'master':'slaveOne') ] = theTile;
+
+//    let newPowers = activateTilePowers(p);
+
+    // save the outgos & incomes of the masters tiles for all players
+    if(p<4){
+      outgos[p] = theTile.outgo;
+      incomes[p] = theTile.income;
+    }
+
+    status = ((p<4)?'master':'slave') + ' on ' + theTile.id + ' ('+theTile.title+') @' +
+             theTile.pos.x + 'x' + theTile.pos.y +((p<4)?'\n':'');
+    lines[ p%4 ] += status;
+
+    if(p==3){           // refresh the source for slaves
+      sT = _.shuffle(_.concat(
+        _.filter(placedTiles, { players: 2, side: true }),
+        _.filter(placedTiles, { players: 3, side: true })));
+      for(let k=0; k<usedTiles.length; k++){
+        sT = _.reject(sT, { id: usedTiles[k] });      // do we need to remove the siblings also?
       }
     }
-  logGameStats(log, 0, {
-    info: ['places workers'], 
-    stats: lines, 
-    hindrance: 25
-  });
-  console.warn('selected tiles are:');
-  console.log(vp);
-  return vp;
+  }
+//  console.warn('selected tiles are:');
+//  console.log(vp);
+  return {w: vp, l: lines, o:outgos, i:incomes, t: usedTiles};
 }
 
-function activateTilePowers(player) {
-//  players[player].stats.h &= players[player].workers.master.income >> 3;
-//  return players[player].stats.h;
-}
-
-function initPlayerDecks(sheet, log, deck, actionTiles, numplayers) {
+function initPlayers(numPlayers, workerSet) {
   let players = [];
-  let copySheet = sheet.getRange('Sheet1!A2:BP' + sheet.getLastRow()).getValues();
-  let copyCalc = sheet.getRange('calc!A2:O' + sheet.getLastRow()).getValues();
-
-  let tileSelection = chooseTiles(log, actionTiles);
-
-  for (let j = 0; j < numplayers; j++) {
-
+  for (let j = 0; j < numPlayers; j++) {
     players[j] = {
       index: j,
       deck: [],
       deckIds: [],
       activated: [],
-      workers: tileSelection[j],
+      workers: workerSet[j],
       stats: {
         q: 6,       // crystals
         xp: 0,
@@ -152,24 +145,33 @@ function initPlayerDecks(sheet, log, deck, actionTiles, numplayers) {
         p: 0,       // poisons
         sp: 0       // saved antidotes
       }
-    };
+    }
+  };
+  return players;
+}
+function shuffleCardIndexes(n) {
+  var arr = [];
+  for (let i = 0; i < n-1; i++)
+    arr[i] = i + 1;
+  return _.shuffle(arr);
+}
+
+function initPlayerDecks(sheet, log, players, deckIndexes, workerSet, numplayers) {
+  let copySheet = sheet.getRange('Sheet1!A2:BP' + sheet.getLastRow()).getValues();
+  let copyCalc = sheet.getRange('calc!A2:O' + sheet.getLastRow()).getValues();
+
+  for (let j = 0; j < numplayers; j++) {
     for (let i = 0; i < 6; i++) {
-      let aCard = deck.shift();
-      if (!aCard) { aCard = deck.shift(); }
+      let aCard = deckIndexes.shift();
+      if (!aCard) { aCard = deckIndexes.shift(); }
       let theCard = decodeSheetRow(aCard, copySheet[aCard], copyCalc[aCard]);
       players[j].deck.push(theCard);
       players[j].deckIds.push(theCard.id);
     }
-
-    console.warn('workers:');
-    console.log(players[j].workers.master.income);
-
-    players[j].stats.h |= players[j].workers.master.outgo >> 3;
-    players[j].stats.sh |= players[j].workers.master.income >> 3;
   }
 
-  logGameStats(log, players[0], {
-    info: ['takes cards'], 
+  logPlayerStats(log, players[0], {
+    infos: ['takes cards'], 
     stats: [
         players[0].deckIds.join(';'), 
         players[1].deckIds.join(';'), 
@@ -179,23 +181,42 @@ function initPlayerDecks(sheet, log, deck, actionTiles, numplayers) {
   });
 
   for (let x = 0; x < numplayers; x++) {
-    players[x].workers = tileSelection[x];
     players[x].deck = _.sortBy(players[x].deck, ['xp', 'xpp', 'q']);
     for (let y = 0; y < 6; y++) {
       players[x].deck[y].q -= 10;
     }
   }
-  let toGoFields = movableFields(actionTiles, players, []);
   return players;
 }
 
-function shuffleCardIndexes(n) {
-  var arr = [];
-  for (let i = 0; i < n-1; i++) {
-    arr[i] = i + 1;
+  function modifyHindrances(playerStats, oVal, iVal) {
+    let oldH = playerStats.h;
+    let oldSH = playerStats.sh;
+    // OR flags from outcome into hindrances
+    // if SH has flags, clear them on hindrances
+    //
+    //  01001     H
+    //  01010     SH
+    //        AND
+    //  01000     >DIFF
+    // x01001 NOT H
+    //  00001     =RESULT = NEW H
+    //  
+    //  01010     SH
+    //  01000     DIFF
+    //  00010     AND&NOT = REMAINING SH
+    //
+    // set the hindrance-flags according to outgo
+    oldH |= oVal >> 3;
+    // create a diff of flags and clear them on the hindrance-flags
+    // diff is what is set on both sides, so only clear those flags afterwards
+    diff = iVal >> 3 && oldH;
+    oldH &= ~diff;
+    // now remove also the 'used' diff from SH, thus saving the remaining SH
+    oldSH &= ~diff;
+    return {h: oldH, sh: oldSH};
   }
-  return _.shuffle(arr);
-}
+
 /**
  * Initializes the hexagonal action-tiles objects and their attributes,
  * by looking up rows 200+ on the values-sheet and its corresponding 
@@ -210,17 +231,17 @@ function shuffleCardIndexes(n) {
 */
 function initActionTiles(sheet) {
   let actionTiles = [];
+  let sibA, sibB, decoded, decoFwd;
+  let coin = true;
+
   let grid = new BHex.Grid(8);
   grid.initMarkers();
 
   let actionSheet = sheet.getRange('Sheet1!A200:BZ227').getValues();
   let actionCalcSheet = sheet.getRange('calc!A200:BZ227').getValues();
   let posBuffer = new BHex.Axial(0,0);
-  let coin = true;
-
   const colPlayersNum = fromA1Notation('BI1');
   const colStage = fromA1Notation('BJ1');
-  let sibA, sibB, decoded, decoFwd;
 
   for(let tileIndex=0; tileIndex<actionSheet.length; tileIndex++){
     decoded = decodeSheetRow(tileIndex, actionSheet[tileIndex], actionCalcSheet[tileIndex]);
@@ -247,7 +268,8 @@ function initActionTiles(sheet) {
       _.pick(decoded, ['pos', 'x', 'y', 'type', 'side', 'xp', 'no', 'id', 'income', 'outgo', 'players', 'bonuscard', 'stage', 'title', 'sibling']));
     console.info('>>> placing the tile '+decoded.id+' onto grid '+grid.getHexAt(posBuffer).getKey()+' with side '+decoded.side);
 
-    if(tileIndex % 2 == 1 && tileIndex<actionSheet.length){     // every 2 half of a tile is @same location
+    // every half of a tile is @same location
+    if(tileIndex % 2 == 1 && tileIndex<actionSheet.length){     
       // pick a random neighbor for the new tile from neighbors only
       coin = _.random(0, 9999) % 2 == 0 ? false : true;
       // this patches up to ensure these tiles are selected initially, other tiles randomly...
@@ -256,7 +278,6 @@ function initActionTiles(sheet) {
       posBuffer = grid.placeAtBorder(posBuffer);
 
       if(!posBuffer){break;}
-//      console.log('flushing buffer with '+grid.getHexAt(posBuffer).getKey());
     }
   }
 //  console.log(actionTiles);
@@ -269,8 +290,8 @@ function initActionTiles(sheet) {
  * It uses only the 'pos' attribute of the tiles. 
  * 
  * @param {array, tiles}     - Array of location objects where tiles are distributed 
- * @param {array, masters}   - Array of location objects with master workers, extracted from players
- * @param {array, slaves}    - Array of location objects with slave workers, extracted from players
+ * @param {array, masters}   - Array of location objects for master workers, extracted from players
+ * @param {array, slaves}    - Array of location objects for slave workers, extracted from players
  * 
  * @return {array}           - Array of location objects without masters and/or slaves
 */

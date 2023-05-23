@@ -4,13 +4,33 @@ var actionTiles = [];
 var dones = [];
 var players = [];
 let tiles = [];
+let tileSelection;
 let maxRow = 150;
 let numPlayers = 4;
 let logSheet = createDumpster();
+var spreadSheet = SpreadsheetApp.getActiveSpreadsheet();
 
 function initGame(){
-  tiles = initActionTiles(SpreadsheetApp.getActiveSpreadsheet());
-  players = initPlayerDecks(SpreadsheetApp.getActiveSpreadsheet(), logSheet, shuffleCardIndexes(maxRow), tiles, numPlayers);
+  tiles = initActionTiles(spreadSheet);
+  let resultTiles = chooseTiles(logSheet, tiles);
+  players = initPlayers(numPlayers, resultTiles.w);
+
+//  let toGoFields = movableFields(tiles, players, []);
+
+  for(let p=0; p<4; p++){
+    let pNewStats = modifyHindrances(players[p].stats, resultTiles.o[p], resultTiles.i[p]);
+    players[p].stats.h = pNewStats.h;
+    players[p].stats.sh = pNewStats.sh;
+  }
+
+  logPlayerStats(logSheet, null, {
+    infos: ['places workers'], 
+    stats: resultTiles.l, 
+    hindrances: resultTiles.o
+  });
+
+  players = initPlayerDecks(spreadSheet, logSheet, players, shuffleCardIndexes(maxRow), tiles, numPlayers);
+
 
 /*
 playACard(0);
@@ -20,16 +40,12 @@ playACard(3);
 playACard(0);
 playACard(1);
 */
-logGameStats(logSheet, players[0], {info: 'test', hindrance: 21, poison: 6});
-logGameStats(logSheet, players[1], {info: 'test2'});
-logGameStats(logSheet, players[0], {hindrance: 21, poison: 6});
-logGameStats(logSheet, players[1], {hindrance: 25, poison: 3});
 
-console.log(players);
-
+/*
+logPlayerStats(logSheet, players[0], {info: 'test', hindrance: 21, poison: 6});
+logPlayerStats(logSheet, players[1], {info: 'test2'});
+logPlayerStats(logSheet, players[0], {hindrance: 21, poison: 6});
+logPlayerStats(logSheet, players[1], {hindrance: 25, poison: 3});
+*/
+//  console.log(players);
 }
-initGame();
-
-
-
-
