@@ -54,24 +54,24 @@ function decodeSheetRow(i, srcValues, calcValues) {
       q:      Number(xtal)+10,           // to sort also negatives, deduce this on usage
       calm:   ((io[13] && io[12]) ? 2 : ((io[13] || io[12]) ? 1 : 0)),
       stress: ((io[14] && io[15] && io[16]) ? 3 : ((io[14] && io[15]) ? 2 : (io[14] ? 1 : 0))),
-      income: (io[6] || io[11]) << 7 |   // minus-hindrances
-              (io[5] || io[10]) << 6 | 
-              (io[4] ||  io[9]) << 5 | 
-              (io[3] ||  io[8]) << 4 | 
-              (io[2] ||  io[7]) << 3 |
-              // skipping 0x100 as there are only 3 antidotes (0x11) 
-              io[1] << 1 | 
-              io[0],
+      income: 
+      (srcValues[fromA1Notation('Z1').column-1] || srcValues[fromA1Notation('AE1').column-1]) << 7 |
+      (srcValues[fromA1Notation('Y1').column-1] || srcValues[fromA1Notation('AD1').column-1]) << 6 | 
+      (srcValues[fromA1Notation('X1').column-1] || srcValues[fromA1Notation('AC1').column-1]) << 5 | 
+      (srcValues[fromA1Notation('W1').column-1] || srcValues[fromA1Notation('AB1').column-1]) << 4 | 
+      (srcValues[fromA1Notation('V1').column-1] || srcValues[fromA1Notation('AA1').column-1]) << 3 |
+      // skipping 0x100 as there are only 3 antidotes (0x11) 
+      srcValues[fromA1Notation('U1').column-1] << 1 | 
+      srcValues[fromA1Notation('T1').column-1],
       outgo: 
       // higher 5 bits are hindrances, lower 3 bits are poisons
-              (io[17] || io[22]) << 7 |   // hindrances
-              (io[18] || io[23]) << 6 | 
-              (io[19] || io[24]) << 5 | 
-              (io[20] || io[25]) << 4 | 
-              (io[21] || io[26]) << 3 | 
-              (io[27] || io[30] || io[33]) << 2 |
-              (io[28] || io[31] || io[34]) << 1 | 
-              (io[29] || io[32] || io[35])
+    (srcValues[fromA1Notation('AK1').column-1] || srcValues[fromA1Notation('AP1').column-1]) << 7 |
+    (srcValues[fromA1Notation('AL1').column-1] || srcValues[fromA1Notation('AQ1').column-1]) << 6 | 
+    (srcValues[fromA1Notation('AM1').column-1] || srcValues[fromA1Notation('AR1').column-1]) << 5 | 
+    (srcValues[fromA1Notation('AN1').column-1] || srcValues[fromA1Notation('AS1').column-1]) << 4 | 
+    (srcValues[fromA1Notation('AO1').column-1] || srcValues[fromA1Notation('AT1').column-1]) << 3 | 
+    (srcValues[fromA1Notation('AV1').column-1] || srcValues[fromA1Notation('AY1').column-1] || srcValues[fromA1Notation('BB1').column-1]) << 1 |
+    (srcValues[fromA1Notation('AW1').column-1] || srcValues[fromA1Notation('AZ1').column-1] || srcValues[fromA1Notation('BC1').column-1])
     };
   }
   return (obj);
@@ -79,13 +79,13 @@ function decodeSheetRow(i, srcValues, calcValues) {
 
 
 function chooseTiles(log, placedTiles) {
-  let vp = [];
+  let tileSet = [{},{},{},{}];
   let lines = ['','','',''];
   let usedTiles = [];
   let outgos = [];
   let incomes = [];
-  let theTile, status;
-  let sT = _.shuffle(_.concat(
+  let theTile, status, nama;
+  let filteredTiles = _.shuffle(_.concat(
     _.filter(placedTiles, { players: 2, side: true, stage: '*' }), 
     _.filter(placedTiles, { players: 2, side: true, stage: 'wood' })
   ));
@@ -95,35 +95,41 @@ function chooseTiles(log, placedTiles) {
   // - a players slave cant be placed where he has a master
   // - 
   for(let p=0; p<4*2; p++){
-    vp[ p%4 ] = {};
-    theTile = sT.pop();
+    theTile = filteredTiles.pop();
     usedTiles.push(theTile.id);
-    vp[ p%4 ][ ((p<4)?'master':'slaveOne') ] = theTile;
+
+    if(p<4) {
+      tileSet[ p%4 ].master = theTile;  
+      // save the outgos & incomes of the masters tiles for all players
+      outgos[p] = theTile.outgo;
+      incomes[p] = theTile.income;
+      nama = 'master';
+    }else{
+      tileSet[ p%4 ].slaveOne = theTile;
+      nama = 'slave';
+    }
+
+//    tileSet[ p%4 ][ ((p<4)?'master':'slaveOne') ] = theTile;
 
 //    let newPowers = activateTilePowers(p);
 
-    // save the outgos & incomes of the masters tiles for all players
-    if(p<4){
-      outgos[p] = theTile.outgo;
-      incomes[p] = theTile.income;
-    }
-
-    status = ((p<4)?'master':'slave') + ' on ' + theTile.id + ' ('+theTile.title+') @' +
-             theTile.pos.x + 'x' + theTile.pos.y +((p<4)?'\n':'');
+    status = nama + ' on ' + theTile.id + ' ('+theTile.title+') @' +
+             theTile.pos.x + 'x' + theTile.pos.y + ((p<4)?'\n':'');
     lines[ p%4 ] += status;
 
     if(p==3){           // refresh the source for slaves
-      sT = _.shuffle(_.concat(
+      filteredTiles = _.shuffle(_.concat(
         _.filter(placedTiles, { players: 2, side: true }),
         _.filter(placedTiles, { players: 3, side: true })));
       for(let k=0; k<usedTiles.length; k++){
-        sT = _.reject(sT, { id: usedTiles[k] });      // do we need to remove the siblings also?
+        // do we need to remove the siblings also?
+        filteredTiles = _.reject(filteredTiles, { id: usedTiles[k] });
       }
     }
   }
 //  console.warn('selected tiles are:');
-//  console.log(vp);
-  return {w: vp, l: lines, o:outgos, i:incomes, t: usedTiles};
+//  console.log(tileSet);
+  return {w: tileSet, l: lines, o:outgos, i:incomes, t: usedTiles};
 }
 
 function initPlayers(numPlayers, workerSet) {
@@ -189,33 +195,35 @@ function initPlayerDecks(sheet, log, players, deckIndexes, workerSet, numplayers
   return players;
 }
 
-  function modifyHindrances(playerStats, oVal, iVal) {
-    let oldH = playerStats.h;
-    let oldSH = playerStats.sh;
-    // OR flags from outcome into hindrances
-    // if SH has flags, clear them on hindrances
-    //
-    //  01001     H
-    //  01010     SH
-    //        AND
-    //  01000     >DIFF
-    // x01001 NOT H
-    //  00001     =RESULT = NEW H
-    //  
-    //  01010     SH
-    //  01000     DIFF
-    //  00010     AND&NOT = REMAINING SH
-    //
-    // set the hindrance-flags according to outgo
-    oldH |= oVal >> 3;
-    // create a diff of flags and clear them on the hindrance-flags
-    // diff is what is set on both sides, so only clear those flags afterwards
-    diff = iVal >> 3 && oldH;
-    oldH &= ~diff;
-    // now remove also the 'used' diff from SH, thus saving the remaining SH
-    oldSH &= ~diff;
-    return {h: oldH, sh: oldSH};
-  }
+function modifyHindrances(playerStats, incomeVal, outgoVal) {
+  let oldH = playerStats.h;
+  let oldSH = playerStats.sh;
+  // OR flags from outcome into hindrances
+  // if SH has flags, clear them on hindrances
+  //
+  //  01001     H
+  //  01010     SH
+  //        AND
+  //  01000     >DIFF
+  // x01001 NOT H
+  //  00001     =RESULT = NEW H
+  //  
+  //  01010     SH
+  //  01000     DIFF
+  //  00010     AND&NOT = REMAINING SH
+  //
+  // set the hindrance-flags according to outgo
+
+  // OUTGOs are yellow shields! / INCOMEs are shields with MINUS
+  oldH |= (outgoVal >> 3);
+  // create a diff of flags and clear them on the hindrance-flags
+  // diff is what is set on both sides, so only clear those flags afterwards
+  let diff = (incomeVal >> 3) && oldH;
+  oldH |= diff;       // set the flag
+  // now remove also the 'used' diff from SH, thus saving the remaining SH
+  oldSH &= ~diff;     // kill the flag from sh
+  return {h: oldH, sh: oldSH};
+}
 
 /**
  * Initializes the hexagonal action-tiles objects and their attributes,

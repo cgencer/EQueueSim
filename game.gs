@@ -15,10 +15,14 @@ function initGame(){
   let resultTiles = chooseTiles(logSheet, tiles);
   players = initPlayers(numPlayers, resultTiles.w);
 
-//  let toGoFields = movableFields(tiles, players, []);
+  let toGoFields = movableFields(tiles, players, []);
 
+  console.log(resultTiles);
   for(let p=0; p<4; p++){
-    let pNewStats = modifyHindrances(players[p].stats, resultTiles.o[p], resultTiles.i[p]);
+    console.log(players[p].stats);
+    // OUTGOs are yellow shields! / INCOMEs are shields with MINUS
+    let pNewStats = modifyHindrances(players[p].stats, resultTiles.i[p], resultTiles.o[p]);
+    console.log(pNewStats);
     players[p].stats.h = pNewStats.h;
     players[p].stats.sh = pNewStats.sh;
   }
@@ -31,6 +35,7 @@ function initGame(){
 
   players = initPlayerDecks(spreadSheet, logSheet, players, shuffleCardIndexes(maxRow), tiles, numPlayers);
 
+  console.log(players);
 
 /*
 playACard(0);
@@ -47,5 +52,4 @@ logPlayerStats(logSheet, players[1], {info: 'test2'});
 logPlayerStats(logSheet, players[0], {hindrance: 21, poison: 6});
 logPlayerStats(logSheet, players[1], {hindrance: 25, poison: 3});
 */
-//  console.log(players);
 }
