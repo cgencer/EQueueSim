@@ -35,6 +35,11 @@ function initPlayers(numPlayers, tileSet) {
     hindrances: latestHindrances
   });
 
+  logPlayerStats(logSheet, null, {
+    infos: ['receives crystals'],
+    crystals: [6, 6, 6, 6]
+  });
+
   return players;
 }
 
@@ -267,7 +272,6 @@ function decodeSheetRow(i, srcValues, calcValues) {
   return (obj);
 }
 
-
 function modifyHindrances(playerStats, incomeVal, outgoVal) {
   let oldH = playerStats.h;
   let oldSH = playerStats.sh;
@@ -299,8 +303,6 @@ function modifyHindrances(playerStats, incomeVal, outgoVal) {
   oldSH &= ~diff;     // kill the flags from sh
   return {h: oldH, sh: oldSH};
 }
-
-
 
 /**
  * Extracts fields with no master workers; if third parameter is passed,

@@ -330,7 +330,7 @@ function logPlayerStats(sheet, player, setOfVals) {
                     fromA1Notation('M1').column, 
                     fromA1Notation('Y1').column, 
                     fromA1Notation('AK1').column];
-  let cols = ['info', 'stats', 'calmness', 'stress', 
+  let cols = ['info', 'stat', 'crystal', 'calm-stress', 
   'hindrance', '', '', '', '', 'poison', '', ''];
 
   if(!_.isNull(player))
@@ -364,6 +364,21 @@ function logPlayerStats(sheet, player, setOfVals) {
         _.each(v, function(c){
           let loc = playerCols[i++];
           sheet.getRange(newRow, loc+1).setValue(c);
+        });
+      }
+    }
+    if('crystal'==k){
+      if(!_.isNull(player))
+        playerNo = _.isInteger(player) ? player : player.index;
+      sheet.getRange(newRow, playerCols[playerNo]+2).setValue(v);
+    }
+    if('crystals'==k){
+      if(_.isArray(v)){
+        if(v.length==1) v = _.fill([], v[0], 4);
+        let i = 0;
+        _.each(v, function(c){
+          let loc = playerCols[i++];
+          sheet.getRange(newRow, loc+2).setValue(c);
         });
       }
     }
