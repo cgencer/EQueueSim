@@ -18,19 +18,19 @@ function initGame(){
   let toGoFields = movableFields(tiles, players, []);
 
   console.log(resultTiles);
+  let latestHindrances = [];
   for(let p=0; p<4; p++){
-    console.log(players[p].stats);
     // OUTGOs are yellow shields! / INCOMEs are shields with MINUS
     let pNewStats = modifyHindrances(players[p].stats, resultTiles.i[p], resultTiles.o[p]);
-    console.log(pNewStats);
     players[p].stats.h = pNewStats.h;
     players[p].stats.sh = pNewStats.sh;
+    latestHindrances[p] = pNewStats.h;
   }
 
   logPlayerStats(logSheet, null, {
     infos: ['places workers'], 
     stats: resultTiles.l, 
-    hindrances: resultTiles.o
+    hindrances: latestHindrances
   });
 
   players = initPlayerDecks(spreadSheet, logSheet, players, shuffleCardIndexes(maxRow), tiles, numPlayers);
