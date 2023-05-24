@@ -1,12 +1,13 @@
-function initPlayers(numPlayers, workerSet) {
+function initPlayers(numPlayers, tileSet) {
   let players = [];
+  let latestHindrances = [];
   for (let j = 0; j < numPlayers; j++) {
     players[j] = {
       index: j,
       deck: [],
       deckIds: [],
       activated: [],
-      workers: workerSet[j],
+      workers: tileSet.w[j],
       stats: {
         q: 6,       // crystals
         xp: 0,
@@ -19,6 +20,21 @@ function initPlayers(numPlayers, workerSet) {
       }
     }
   };
+
+  for(let p=0; p<4; p++){
+    // OUTGOs are yellow shields! / INCOMEs are shields with MINUS
+    let pNewStats = modifyHindrances(players[p].stats, tileSet.i[p], tileSet.o[p]);
+    players[p].stats.h = pNewStats.h;
+    players[p].stats.sh = pNewStats.sh;
+    latestHindrances[p] = pNewStats.h;
+  }
+
+  logPlayerStats(logSheet, null, {
+    infos: ['places workers'], 
+    stats: tileSet.l, 
+    hindrances: latestHindrances
+  });
+
   return players;
 }
 

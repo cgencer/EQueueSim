@@ -13,25 +13,11 @@ var spreadSheet = SpreadsheetApp.getActiveSpreadsheet();
 function initGame(){
   tiles = initActionTiles(spreadSheet);
   let resultTiles = chooseTiles(logSheet, tiles);
-  players = initPlayers(numPlayers, resultTiles.w);
+  players = initPlayers(numPlayers, resultTiles);
 
   let toGoFields = movableFields(tiles, players, []);
 
   console.log(resultTiles);
-  let latestHindrances = [];
-  for(let p=0; p<4; p++){
-    // OUTGOs are yellow shields! / INCOMEs are shields with MINUS
-    let pNewStats = modifyHindrances(players[p].stats, resultTiles.i[p], resultTiles.o[p]);
-    players[p].stats.h = pNewStats.h;
-    players[p].stats.sh = pNewStats.sh;
-    latestHindrances[p] = pNewStats.h;
-  }
-
-  logPlayerStats(logSheet, null, {
-    infos: ['places workers'], 
-    stats: resultTiles.l, 
-    hindrances: latestHindrances
-  });
 
   players = initPlayerDecks(spreadSheet, logSheet, players, shuffleCardIndexes(maxRow), tiles, numPlayers);
 
