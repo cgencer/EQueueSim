@@ -37,7 +37,7 @@ function initPlayers(numPlayers, tileSet) {
 
   logPlayerStats(logSheet, null, {
     infos: ['receives crystals'],
-    crystals: [6, 6, 6, 6]
+    crystals: 6
   });
 
   return players;
@@ -64,7 +64,8 @@ function initPlayerDecks(sheet, log, players, deckIndexes, workerSet, numplayers
         players[1].deckIds.join(';'), 
         players[2].deckIds.join(';'), 
         players[3].deckIds.join(';')
-    ]
+    ],
+    calmstress: [0]
   });
 
   for (let x = 0; x < numplayers; x++) {

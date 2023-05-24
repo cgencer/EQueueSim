@@ -330,94 +330,93 @@ function logPlayerStats(sheet, player, setOfVals) {
                     fromA1Notation('M1').column, 
                     fromA1Notation('Y1').column, 
                     fromA1Notation('AK1').column];
-  let cols = ['info', 'stat', 'crystal', 'calm-stress', 
+  let cols = ['info', 'stat', 'crystals', 'calmstress', 
   'hindrance', '', '', '', '', 'poison', '', ''];
 
   if(!_.isNull(player))
     playerNo = _.isInteger(player) ? player : player.index;
   let newRow = sheet.getLastRow() + 1;
 
+  let i = 0;
   _.each(setOfVals, function(v, k, coll){
-    if('info'==k){
-      let loc = playerCols[playerNo];
-      sheet.getRange(newRow, loc).setValue(v);
-    }
-    if('infos'==k){
-      if(_.isArray(v)){
-        if(v.length==1) v = _.fill(Array(4), v[0]);
-        let i = 0;
+    if(!_.isNull(player))
+      playerNo = _.isInteger(player) ? player : player.index;
+    else 
+      if(_.isArray(v))
+        if(v.length==1)
+          v = _.fill(Array(4), v[0]);
+    switch(k){
+      case 'info':
+        sheet.getRange(newRow, playerCols[playerNo]).setValue(v);
+        break;
+      case 'stat':
+        sheet.getRange(newRow, playerCols[playerNo]+1).setValue(v);
+        break;
+      case 'crystal':
+        sheet.getRange(newRow, playerCols[playerNo]+2).setValue(v);
+        break;
+      case 'calm':
+        sheet.getRange(newRow, playerCols[playerNo]+3).setValue(
+            (player[playerNo].stats.c + v) + ' / ' + player[playerNo].stats.s);
+        break;
+      case 'stress':
+        sheet.getRange(newRow, playerCols[playerNo]+3).setValue(
+            (player[playerNo].stats.c) + ' / ' + player[playerNo].stats.s + v);
+        break;
+      case 'hindrance':
+        let pos = ['A'+newRow+':I'+newRow, 'Q'+newRow+':U'+newRow, 'AC'+newRow+':AG'+newRow, 'AO'+newRow+':AS'+newRow];
+        sheet.getRange(pos[playerNo]).setValues([[
+          (isFlagSet(v[playerNo], 16) ? 'X' : ''), (isFlagSet(v[playerNo],  8) ? 'X' : ''),
+          (isFlagSet(v[playerNo],  4) ? 'X' : ''), (isFlagSet(v[playerNo],  2) ? 'X' : ''),
+          (isFlagSet(v[playerNo],  1) ? 'X' : '')
+        ]]);
+        break;
+      case 'infos':
         _.each(v, function(c){
-          let loc = playerCols[i++];
-          sheet.getRange(newRow, loc).setValue(c);
+          sheet.getRange(newRow, playerCols[i++]).setValue(c);
         });
-      }
-    }
-    if('stat'==k){
-      if(!_.isNull(player))
-        playerNo = _.isInteger(player) ? player : player.index;
-      sheet.getRange(newRow, playerCols[playerNo]+1).setValue(v);
-    }
-    if('stats'==k){
-      if(_.isArray(v)){
-        if(v.length==1) v = _.fill([], v[0], 4);
-        let i = 0;
+        i=0;
+        break;
+      case 'stats':
         _.each(v, function(c){
-          let loc = playerCols[i++];
-          sheet.getRange(newRow, loc+1).setValue(c);
+          sheet.getRange(newRow, playerCols[i++]+1).setValue(c);
         });
-      }
-    }
-    if('crystal'==k){
-      if(!_.isNull(player))
-        playerNo = _.isInteger(player) ? player : player.index;
-      sheet.getRange(newRow, playerCols[playerNo]+2).setValue(v);
-    }
-    if('crystals'==k){
-      if(_.isArray(v)){
-        if(v.length==1) v = _.fill([], v[0], 4);
-        let i = 0;
+        i=0;
+        break;
+      case 'crystals':
         _.each(v, function(c){
           let loc = playerCols[i++];
           sheet.getRange(newRow, loc+2).setValue(c);
         });
-      }
+        i=0;
+        break;
+      case 'calmstress':
+        _.each(v, function(c){
+          sheet.getRange(newRow, playerCols[i++]+3).setValue(v+' / '+v);
+        });
+        i=0;
+        break;
+      case 'poisons':
+        _.each(v, function(c){
+          sheet.getRange(newRow, playerCols[i++]+3).setValue(v+' / '+v);
+        });
+        i=0;
+        break;
+      case 'hindrances':
+        for(playerNo=0; playerNo<4; playerNo++){
+          let pos = [ 'E'+newRow+':I'+newRow, 
+                      'Q'+newRow+':U'+newRow, 
+                      'AC'+newRow+':AG'+newRow, 
+                      'AO'+newRow+':AS'+newRow];
+          sheet.getRange(pos[playerNo]).setValues([[
+            (isFlagSet(v[playerNo], 16) ? 'X' : ''), (isFlagSet(v[playerNo],  8) ? 'X' : ''),
+            (isFlagSet(v[playerNo],  4) ? 'X' : ''), (isFlagSet(v[playerNo],  2) ? 'X' : ''),
+            (isFlagSet(v[playerNo],  1) ? 'X' : '')
+          ]]);
+        }
+        break;
     }
-    if('hindrance'==k){
-      if(!_.isNull(player))
-        playerNo = _.isInteger(player) ? player : player.index;
-      let loc = playerCols[playerNo];
-      sheet.getRange(newRow, loc + 8).setValue((isFlagSet(v, 16) ? 'X' : ''));
-      sheet.getRange(newRow, loc + 7).setValue((isFlagSet(v,  8) ? 'X' : ''));
-      sheet.getRange(newRow, loc + 6).setValue((isFlagSet(v,  4) ? 'X' : ''));
-      sheet.getRange(newRow, loc + 5).setValue((isFlagSet(v,  2) ? 'X' : ''));
-      sheet.getRange(newRow, loc + 4).setValue((isFlagSet(v,  1) ? 'X' : ''));
-    }
-    if('hindrances'==k){
-      for(playerNo=0; playerNo<4; playerNo++){
-        let loc = playerCols[playerNo];
-        sheet.getRange(newRow, loc + 8).setValue((isFlagSet(v[playerNo], 16) ? 'X' : ''));
-        sheet.getRange(newRow, loc + 7).setValue((isFlagSet(v[playerNo],  8) ? 'X' : ''));
-        sheet.getRange(newRow, loc + 6).setValue((isFlagSet(v[playerNo],  4) ? 'X' : ''));
-        sheet.getRange(newRow, loc + 5).setValue((isFlagSet(v[playerNo],  2) ? 'X' : ''));
-        sheet.getRange(newRow, loc + 4).setValue((isFlagSet(v[playerNo],  1) ? 'X' : ''));
-      }
-    }
-    if('poison'==k){
-      if(!_.isNull(player))
-        playerNo = _.isInteger(player) ? player : player.index;
-      let loc = playerCols[playerNo];
-      sheet.getRange(newRow, loc + 11).setValue((isFlagSet(v, 4) ? 'X' : ''));
-      sheet.getRange(newRow, loc + 10).setValue((isFlagSet(v, 2) ? 'X' : ''));
-      sheet.getRange(newRow, loc +  9).setValue((isFlagSet(v, 1) ? 'X' : ''));
-    }
-    if('poisons'==k){
-      for(playerNo=0; playerNo<4; playerNo++){
-        let loc = playerCols[playerNo];
-        sheet.getRange(newRow, loc + 11).setValue((isFlagSet(v[playerNo], 4) ? 'X' : ''));
-        sheet.getRange(newRow, loc + 10).setValue((isFlagSet(v[playerNo], 2) ? 'X' : ''));
-        sheet.getRange(newRow, loc +  9).setValue((isFlagSet(v[playerNo], 1) ? 'X' : ''));
-      }
-    }
+
   });
 
 }
