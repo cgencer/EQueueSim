@@ -431,22 +431,16 @@ function playACard(logSheet, players, playerNo) {
             }
           }
         }
-//        players[pObj.index].stats.xp += tempXP;
         _.set(players, '['+(playerNo%4)+'].stats.xp', pObj.stats.xp + tempXP);
 
       }else{
-//        players[pObj.index].stats.q += activatedCard.act.inRoundQ;
         _.set(players, '['+(playerNo%4)+'].stats.q', pObj.stats.q + activatedCard.act.inRoundQ);
       }
       pNewStats = modifyHindrances(pObj, activatedCard.income, activatedCard.outgo, logSheet);
-//      players[pObj.index].stats.h = pNewStats.h;
-//      players[pObj.index].stats.sh = pNewStats.sh;
       _.set(players, '['+(playerNo%4)+'].stats.h', pNewStats.h);
       _.set(players, '['+(playerNo%4)+'].stats.sh', pNewStats.sh);
 
       pNewStats = modifyPoisons(pObj, activatedCard.income, activatedCard.outgo, logSheet);
-//      players[pObj.index].stats.p = pNewStats.p;
-//      players[pObj.index].stats.sp = pNewStats.sp;
       _.set(players, '['+(playerNo%4)+'].stats.p', pNewStats.p);
       _.set(players, '['+(playerNo%4)+'].stats.sp', pNewStats.sp);
 
@@ -458,6 +452,7 @@ function playACard(logSheet, players, playerNo) {
       logPlayerStats(logSheet, pObj, {
         info: 'plays a card', 
         stat: '"' + activatedCard.title + '" (' + activatedCard.id + ')',
+        note: activatedCard.title + '\n' + JSON.stringify(activatedCard, null, 4),
         poiHind: pObj.stats,
         noCR: true
       });
