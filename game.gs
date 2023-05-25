@@ -21,16 +21,14 @@ function initGame(){
 
   players = initPlayerDecks(spreadSheet, logSheet, players, shuffleCardIndexes(maxRow), tiles, numPlayers);
 
+
+for(let j=0;j<3;j++){
+  for(let i=0;i<4;i++){
+    playACard(logSheet, players, i);
+  }
+}
   console.log(players);
 
-/*
-playACard(0);
-playACard(1);
-playACard(2);
-playACard(3);
-playACard(0);
-playACard(1);
-*/
 
 /*
 logPlayerStats(logSheet, players[0], {info: 'test', hindrance: 21, poison: 6});

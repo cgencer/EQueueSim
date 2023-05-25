@@ -322,10 +322,8 @@ function isFlagSet (actual, expected) {
   return flag === expected;
 };
 
-function logPlayerStats(sheet, player, setOfVals) {
-  let playerNo;
-  if(!_.isNull(player))
-    playerNo = _.isInteger(player) ? player : player.index;
+function logPlayerStats(sheet, playerObj, setOfVals) {
+  let playerNo, pos;
   let playerCols = [fromA1Notation('A1').column, 
                     fromA1Notation('M1').column, 
                     fromA1Notation('Y1').column, 
@@ -333,19 +331,22 @@ function logPlayerStats(sheet, player, setOfVals) {
   let cols = ['info', 'stat', 'crystals', 'calmstress', 
   'hindrance', '', '', '', '', 'poison', '', ''];
 
-  if(!_.isNull(player))
-    playerNo = _.isInteger(player) ? player : player.index;
-  let newRow = sheet.getLastRow() + 1;
-
+  let newRow = _.has(setOfVals, 'noCR') ? sheet.getLastRow() : sheet.getLastRow() + 1; 
+//  if(_.isObject(playerObj) && _.has(playerObj, 'index') && playerObj.index == 0)
+//    sheet.getLastRow() + 1;
   let i = 0;
-  _.each(setOfVals, function(v, k, coll){
-    if(!_.isNull(player))
-      playerNo = _.isInteger(player) ? player : player.index;
+
+  _.forIn(setOfVals, function(v, k){
+    if(!_.isNull(playerObj))
+      playerNo = _.isInteger(playerObj) ? playerObj : playerObj.index;
     else 
-      if(_.isArray(v))
-        if(v.length==1)
-          v = _.fill(Array(4), v[0]);
+      if(_.isInteger(v))
+        v = _.fill(Array(4), v);
+      if(_.isArray(v) && v.length==1)       
+        v = _.fill(Array(4), v[0]);
     switch(k){
+      case 'noCR':
+        break;
       case 'info':
         sheet.getRange(newRow, playerCols[playerNo]).setValue(v);
         break;
@@ -357,18 +358,33 @@ function logPlayerStats(sheet, player, setOfVals) {
         break;
       case 'calm':
         sheet.getRange(newRow, playerCols[playerNo]+3).setValue(
-            (player[playerNo].stats.c + v) + ' / ' + player[playerNo].stats.s);
+            (playerObj.stats.c + v) + ' / ' + playerObj.stats.s);
         break;
       case 'stress':
         sheet.getRange(newRow, playerCols[playerNo]+3).setValue(
-            (player[playerNo].stats.c) + ' / ' + player[playerNo].stats.s + v);
+            (playerObj.stats.c) + ' / ' + playerObj.stats.s + v);
         break;
       case 'hindrance':
-        let pos = ['A'+newRow+':I'+newRow, 'Q'+newRow+':U'+newRow, 'AC'+newRow+':AG'+newRow, 'AO'+newRow+':AS'+newRow];
+        pos = [ 'E'+newRow+':I'+newRow, 
+                    'Q'+newRow+':U'+newRow, 
+                    'AC'+newRow+':AG'+newRow, 
+                    'AO'+newRow+':AS'+newRow];
         sheet.getRange(pos[playerNo]).setValues([[
           (isFlagSet(v[playerNo], 16) ? 'X' : ''), (isFlagSet(v[playerNo],  8) ? 'X' : ''),
           (isFlagSet(v[playerNo],  4) ? 'X' : ''), (isFlagSet(v[playerNo],  2) ? 'X' : ''),
           (isFlagSet(v[playerNo],  1) ? 'X' : '')
+        ]]);
+        break;
+      case 'poiHind':     // hindrances & poisons together
+        pos = [ 'E'+newRow+':L'+newRow, 
+                    'Q'+newRow+':X'+newRow, 
+                    'AC'+newRow+':AJ'+newRow, 
+                    'AO'+newRow+':AV'+newRow];
+//        player.stats.p
+        sheet.getRange(pos[playerNo]).setValues([[
+          (isFlagSet(v.h[playerNo], 16) ? 'X' : ''), (isFlagSet(v.h[playerNo],  8) ? 'X' : ''),
+          (isFlagSet(v.h[playerNo],  4) ? 'X' : ''), (isFlagSet(v.h[playerNo],  2) ? 'X' : ''),
+          (isFlagSet(v.h[playerNo],  1) ? 'X' : ''), 0, 0, 0
         ]]);
         break;
       case 'infos':
@@ -383,28 +399,29 @@ function logPlayerStats(sheet, player, setOfVals) {
         });
         i=0;
         break;
+      case 'heart':
+        break;
+      case 'mind':
+        break;
       case 'crystals':
         _.each(v, function(c){
-          let loc = playerCols[i++];
-          sheet.getRange(newRow, loc+2).setValue(c);
+          sheet.getRange(newRow, playerCols[i++]+2).setValue(c);
         });
         i=0;
         break;
       case 'calmstress':
-        _.each(v, function(c){
-          sheet.getRange(newRow, playerCols[i++]+3).setValue(v+' / '+v);
-        });
-        i=0;
+        for(playerNo=0; playerNo<4; playerNo++)
+          sheet.getRange(newRow, playerCols[playerNo]+3).setValue(v+' / '+v);
         break;
       case 'poisons':
         _.each(v, function(c){
-          sheet.getRange(newRow, playerCols[i++]+3).setValue(v+' / '+v);
+//          sheet.getRange(newRow, playerCols[i++]+3).setValue(v+' / '+v);
         });
         i=0;
         break;
       case 'hindrances':
         for(playerNo=0; playerNo<4; playerNo++){
-          let pos = [ 'E'+newRow+':I'+newRow, 
+          pos = [ 'E'+newRow+':I'+newRow, 
                       'Q'+newRow+':U'+newRow, 
                       'AC'+newRow+':AG'+newRow, 
                       'AO'+newRow+':AS'+newRow];

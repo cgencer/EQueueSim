@@ -8,6 +8,10 @@ function initPlayers(numPlayers, tileSet) {
       deckIds: [],
       activated: [],
       workers: tileSet.w[j],
+      tracks: {
+        heart: 0,
+        mind: 0,
+      },
       stats: {
         q: 6,       // crystals
         xp: 0,
@@ -23,7 +27,7 @@ function initPlayers(numPlayers, tileSet) {
 
   for(let p=0; p<4; p++){
     // OUTGOs are yellow shields! / INCOMEs are shields with MINUS
-    let pNewStats = modifyHindrances(players[p].stats, tileSet.i[p], tileSet.o[p]);
+    let pNewStats = modifyHindrances(players[p], tileSet.i[p], tileSet.o[p]);
     players[p].stats.h = pNewStats.h;
     players[p].stats.sh = pNewStats.sh;
     latestHindrances[p] = pNewStats.h;
@@ -37,14 +41,14 @@ function initPlayers(numPlayers, tileSet) {
 
   logPlayerStats(logSheet, null, {
     infos: ['receives crystals'],
-    crystals: 6
+    crystals: [6]
   });
 
   return players;
 }
 
-function initPlayerDecks(sheet, log, players, deckIndexes, workerSet, numplayers) {
-  let copySheet = sheet.getRange('Sheet1!A2:BP' + sheet.getLastRow()).getValues();
+function initPlayerDecks(sheet, logSheet, players, deckIndexes, workerSet, numplayers) {
+  let copySheet = sheet.getRange('Sheet1!A2:BZ' + sheet.getLastRow()).getValues();
   let copyCalc = sheet.getRange('calc!A2:O' + sheet.getLastRow()).getValues();
 
   for (let j = 0; j < numplayers; j++) {
@@ -57,15 +61,15 @@ function initPlayerDecks(sheet, log, players, deckIndexes, workerSet, numplayers
     }
   }
 
-  logPlayerStats(log, players[0], {
-    infos: ['takes cards'], 
+  logPlayerStats(logSheet, players[0], {
+    infos: ['picks cards'], 
     stats: [
         players[0].deckIds.join(';'), 
         players[1].deckIds.join(';'), 
         players[2].deckIds.join(';'), 
         players[3].deckIds.join(';')
     ],
-    calmstress: [0]
+    calmstress: 0
   });
 
   for (let x = 0; x < numplayers; x++) {
@@ -179,39 +183,42 @@ function chooseTiles(log, placedTiles) {
   // the slaves are placed onto any tiles w/o above priority-filters
   // - a players slave cant be placed where he has a master
   // - 
-  for(let p=0; p<4*2; p++){
-    theTile = filteredTiles.pop();
-    usedTiles.push(theTile.id);
+  while(filteredTiles.length > 1) {
+    for(let p=0; p<4*2; p++){
+      theTile = filteredTiles.pop();
+      usedTiles.push(theTile.id);
 
-    if(p<4) {
-      tileSet[ p%4 ].master = theTile;  
-      // save the outgos & incomes of the masters tiles for all players
-      outgos[p] = theTile.outgo;
-      incomes[p] = theTile.income;
-      nama = 'master';
-    }else{
-      tileSet[ p%4 ].slaveOne = theTile;
-      nama = 'slave';
-    }
+      if(p<4) {
+        tileSet[ p%4 ].master = theTile;  
+        // save the outgos & incomes of the masters tiles for all players
+        outgos[p] = theTile.outgo;
+        incomes[p] = theTile.income;
+        nama = 'master';
+      }else{
+        tileSet[ p%4 ].slaveOne = theTile;
+        nama = 'slave';
+      }
 
-    status = nama + ' on ' + theTile.id + ' ('+theTile.title+') @' +
-             theTile.pos.x + 'x' + theTile.pos.y + ((p<4)?'\n':'');
-    lines[ p%4 ] += status;
+      status = nama + ' on ' + theTile.id + ' ('+theTile.title+') @' +
+              theTile.pos.x + 'x' + theTile.pos.y + ((p<4)?'\n':'');
+      lines[ p%4 ] += status;
 
-    if(p==3){           // refresh the source for slaves
-      filteredTiles = _.shuffle(_.concat(
-        _.filter(placedTiles, { players: 2, side: true }),
-        _.filter(placedTiles, { players: 3, side: true })));
-      for(let k=0; k<usedTiles.length; k++){
-        // do we need to remove the siblings also?
-        filteredTiles = _.reject(filteredTiles, { id: usedTiles[k] });
+      if(p==3){           // refresh the source for slaves
+        filteredTiles = _.shuffle(_.concat(
+          _.filter(placedTiles, { players: 2, side: true }),
+          _.filter(placedTiles, { players: 3, side: true })));
+        for(let k=0; k<usedTiles.length; k++){
+          // do we need to remove the siblings also?
+          filteredTiles = _.reject(filteredTiles, { id: usedTiles[k] });
+        }
       }
     }
+  //  console.warn('selected tiles are:');
+  //  console.log(tileSet);
+    return {w: tileSet, l: lines, o:outgos, i:incomes, t: usedTiles};
   }
-//  console.warn('selected tiles are:');
-//  console.log(tileSet);
-  return {w: tileSet, l: lines, o:outgos, i:incomes, t: usedTiles};
 }
+
 
 function decodeSheetRow(i, srcValues, calcValues) {
   let xpp, xtal, io, obj;
@@ -243,9 +250,9 @@ function decodeSheetRow(i, srcValues, calcValues) {
       lvl:    srcValues[fromA1Notation('F1').column-1],
       q:      Number(xtal)+10,           // to sort also negatives, deduce this on usage
       act: {
-        inRound:    srcValues[fromA1Notation('BS1').column-1],
-        endRound:   srcValues[fromA1Notation('BT1').column-1],
-        endRushed:  srcValues[fromA1Notation('BU1').column-1]
+        inRoundQ:     Number(srcValues[fromA1Notation('BS1').column-1]),
+        endRoundXP:   Number(srcValues[fromA1Notation('BT1').column-1]),
+        endRushedXP:  Number(srcValues[fromA1Notation('BU1').column-1])
       },
       calm:   ((io[13] && io[12]) ? 2 : ((io[13] || io[12]) ? 1 : 0)),
       stress: ((io[14] && io[15] && io[16]) ? 3 : ((io[14] && io[15]) ? 2 : (io[14] ? 1 : 0))),
@@ -273,9 +280,26 @@ function decodeSheetRow(i, srcValues, calcValues) {
   return (obj);
 }
 
-function modifyHindrances(playerStats, incomeVal, outgoVal) {
-  let oldH = playerStats.h;
-  let oldSH = playerStats.sh;
+function modifyPoisons(playerStats, incomeVal, outgoVal, log) {
+  let oldPoison = playerStats.p;
+  let oldSPoison = playerStats.sp;
+  //==============================================
+  // 0x111  first 2 bits: value
+  //   \---> if set: addressed poison nr (OUTGO)
+  //(3rd bit) clear: number of antidotes (INCOME)
+  //==============================================
+
+  if(log){
+
+  }
+
+  return {p: oldPoison, sp: oldSPoison};
+}
+
+function modifyHindrances(playerObj, incomeVal, outgoVal, logSheet) {
+  // OUTGOs are yellow shields! / INCOMEs are shields with MINUS
+  let oldH = playerObj.stats.h;
+  let oldSH = playerObj.stats.sh;
   // OR flags from outcome into hindrances
   // if SH has flags, clear them on hindrances
   //
@@ -292,16 +316,22 @@ function modifyHindrances(playerStats, incomeVal, outgoVal) {
   //
   // set the hindrance-flags according to outgo
 
-  // OUTGOs are yellow shields! / INCOMEs are shields with MINUS
   oldH |= (outgoVal >> 3);                                                    // 32->4
   oldSH |= (incomeVal >> 3);
   // create a diff of flags and clear them on the hindrance-flags
   // diff is what is set on both sides, so only clear those flags afterwards
-//  let diff = (incomeVal >> 3) && oldH;                                        // 64->8 & 
   let diff = oldH & oldSH;
   oldH |= diff;       // set the flags
   // now remove also the 'used' diff from SH, thus saving the remaining SH
   oldSH &= ~diff;     // kill the flags from sh
+
+  if(logSheet){
+    logPlayerStats(logSheet, playerObj, {
+      poiHind: playerObj.stats,
+      noCR: true
+    });
+  }
+
   return {h: oldH, sh: oldSH};
 }
 
@@ -350,17 +380,88 @@ function changePlayerStats(p, v, s) {  // playerNo, whichStat, statNo or value (
   else players[p].stats[v] += s;
 }
 
-function playACard(p) {
-  if(players[p].stats.q > 0 && players[p].deck.length > 0){
-    let theQ = players[p].deck[ players[p].deck.length-1 ].q;
-    if(players[p].stats.q >= theQ){
-      let activatingCard = players[p].deck.pop();
-      changePlayerStats(p, 'q', activatingCard.q);
-      if(players[p].workers.master){}
-      changePlayerStats(p, 'xp', activatingCard.xp);
-      players[p].activated.push(activatingCard);
+function playACard(logSheet, players, playerNo) {
+
+  let pNewStats, immediateEarn, tempXP;
+  const pObj = players[playerNo];
+
+  if(pObj.stats.q > 0 && pObj.deck.length > 0){
+
+    if(pObj.stats.q >= pObj.deck[ _.size(pObj.deck)-1 ].q){
+
+      // priority-values are:
+      // - bigger crystal income
+      // - smaller crystal outgo
+      // - bigger xp
+      // - level of players pyramid; next level is always prior; passed levels are unimportant
+      // - lesser cost
+      // - matching activity-icons with available prospects
+      // - more activity-icons
+      // - axes/required active emotiles corrolation
+  
+      // create a sorting based on the priority-score for cards
+
+      const activatedCard = pObj.deck.pop();
+
+      // pay the crystals
+      _.set(players, '['+(playerNo%4)+'].stats.xp', pObj.stats.q - activatedCard.q);
+
+      // check for the need to push (e.g. receive crystal immediatly)
+
+      // if immediatly, player only receives crystal with no leftover xp
+      // if waits for turn end, receives crystal & leftover xp (turns into crystal)
+      // if their workers are on a matching tile, they receive crystal & rushed xp
+
+      
+      immediateEarn = false;
+
+      // matching workers check
+      const workerNama = ['master', 'slaveOne', 'slaveTwo', 'slaveThree'];
+      tempXP = activatedCard.act.endRoundXP;
+      console.warn('activating card '+activatedCard.title+' ('+activatedCard.id+') for player '+playerNo+' in stage '+activatedCard.stage);
+
+      if(!immediateEarn){
+        for(j=0; j<workerNama.length; j++){
+          if(_.has(pObj.workers, workerNama[j])){
+            if (pObj.workers[ workerNama[j] ].stage == '*' || 
+                pObj.workers[ workerNama[j] ].stage == activatedCard.stage) {
+                  tempXP = activatedCard.act.endRushedXP;
+                  break;
+            }
+          }
+        }
+//        players[pObj.index].stats.xp += tempXP;
+        _.set(players, '['+(playerNo%4)+'].stats.xp', pObj.stats.xp + tempXP);
+
+      }else{
+//        players[pObj.index].stats.q += activatedCard.act.inRoundQ;
+        _.set(players, '['+(playerNo%4)+'].stats.q', pObj.stats.q + activatedCard.act.inRoundQ);
+      }
+      pNewStats = modifyHindrances(pObj, activatedCard.income, activatedCard.outgo, logSheet);
+//      players[pObj.index].stats.h = pNewStats.h;
+//      players[pObj.index].stats.sh = pNewStats.sh;
+      _.set(players, '['+(playerNo%4)+'].stats.h', pNewStats.h);
+      _.set(players, '['+(playerNo%4)+'].stats.sh', pNewStats.sh);
+
+      pNewStats = modifyPoisons(pObj, activatedCard.income, activatedCard.outgo, logSheet);
+//      players[pObj.index].stats.p = pNewStats.p;
+//      players[pObj.index].stats.sp = pNewStats.sp;
+      _.set(players, '['+(playerNo%4)+'].stats.p', pNewStats.p);
+      _.set(players, '['+(playerNo%4)+'].stats.sp', pNewStats.sp);
+
+      changePlayerStats(playerNo, 'xp', activatedCard.xp);
+      const tempArr = pObj.activated;
+      tempArr.push(activatedCard.id);
+      _.set(players, '['+(playerNo%4)+'].activated', tempArr);
     }
   }
+
+  logPlayerStats(logSheet, pObj, {
+    info: 'plays a card', 
+    poiHind: pObj.stats,
+    noCR: true
+  });
+
 }
 
 function addSlave(p) {
