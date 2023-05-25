@@ -331,19 +331,16 @@ function logPlayerStats(sheet, playerObj, setOfVals) {
   let cols = ['info', 'stat', 'crystals', 'calmstress', 
   'hindrance', '', '', '', '', 'poison', '', ''];
 
-  let newRow = _.has(setOfVals, 'noCR') ? sheet.getLastRow() : sheet.getLastRow() + 1; 
-//  if(_.isObject(playerObj) && _.has(playerObj, 'index') && playerObj.index == 0)
-//    sheet.getLastRow() + 1;
+  let newRow = (_.has(setOfVals, 'noCR')) ? sheet.getMaxRows() : sheet.getMaxRows() + 1; 
   let i = 0;
 
   _.forIn(setOfVals, function(v, k){
     if(!_.isNull(playerObj))
       playerNo = _.isInteger(playerObj) ? playerObj : playerObj.index;
-    else 
-      if(_.isInteger(v))
-        v = _.fill(Array(4), v);
-      if(_.isArray(v) && v.length==1)       
-        v = _.fill(Array(4), v[0]);
+    if(_.isNull(playerObj) && _.isInteger(v))
+      v = _.fill(Array(4), v);
+    else if(_.isNull(playerObj) && _.isArray(v) && v.length==1)       
+      v = _.fill(Array(4), v[0]);
     switch(k){
       case 'noCR':
         break;
@@ -433,9 +430,7 @@ function logPlayerStats(sheet, playerObj, setOfVals) {
         }
         break;
     }
-
   });
-
 }
 
 function logToSheet(url, message) {

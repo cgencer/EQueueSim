@@ -402,6 +402,7 @@ function playACard(logSheet, players, playerNo) {
       // create a sorting based on the priority-score for cards
 
       const activatedCard = pObj.deck.pop();
+      _.set(players, '['+(playerNo%4)+'].deckIds', _.pull(pObj.deckIds, activatedCard.id));
 
       // pay the crystals
       _.set(players, '['+(playerNo%4)+'].stats.xp', pObj.stats.q - activatedCard.q);
@@ -418,7 +419,7 @@ function playACard(logSheet, players, playerNo) {
       // matching workers check
       const workerNama = ['master', 'slaveOne', 'slaveTwo', 'slaveThree'];
       tempXP = activatedCard.act.endRoundXP;
-      console.warn('activating card '+activatedCard.title+' ('+activatedCard.id+') for player '+playerNo+' in stage '+activatedCard.stage);
+      console.info('activating card "'+activatedCard.title+'" ('+activatedCard.id+') for player '+playerNo+' in stage '+activatedCard.stage);
 
       if(!immediateEarn){
         for(j=0; j<workerNama.length; j++){
@@ -453,15 +454,15 @@ function playACard(logSheet, players, playerNo) {
       const tempArr = pObj.activated;
       tempArr.push(activatedCard.id);
       _.set(players, '['+(playerNo%4)+'].activated', tempArr);
+
+      logPlayerStats(logSheet, pObj, {
+        info: 'plays a card', 
+        stat: '"' + activatedCard.title + '" (' + activatedCard.id + ')',
+        poiHind: pObj.stats,
+        noCR: true
+      });
     }
   }
-
-  logPlayerStats(logSheet, pObj, {
-    info: 'plays a card', 
-    poiHind: pObj.stats,
-    noCR: true
-  });
-
 }
 
 function addSlave(p) {

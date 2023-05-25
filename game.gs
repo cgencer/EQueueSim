@@ -17,16 +17,15 @@ function initGame(){
 
   let toGoFields = movableFields(tiles, players, []);
 
-  console.log(resultTiles);
-
   players = initPlayerDecks(spreadSheet, logSheet, players, shuffleCardIndexes(maxRow), tiles, numPlayers);
 
-
-for(let j=0;j<3;j++){
-  for(let i=0;i<4;i++){
-    playACard(logSheet, players, i);
+  logSheet.insertRowsAfter(logSheet.getMaxRows(), 1);
+  for(let j=0;j<3;j++){
+    for(let i=0;i<4;i++){
+      playACard(logSheet, players, i);
+    }
+    logSheet.insertRowsAfter(logSheet.getMaxRows(), 1);
   }
-}
   console.log(players);
 
 
