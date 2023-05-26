@@ -420,7 +420,8 @@ function logPlayerStats(sheet, playerObj, setOfVals) {
         sheet.getRange(pos[playerNo]).setValues([[
           (isFlagSet(v.h, 16) ? 'X' : ''), (isFlagSet(v.h,  8) ? 'X' : ''),
           (isFlagSet(v.h,  4) ? 'X' : ''), (isFlagSet(v.h,  2) ? 'X' : ''),
-          (isFlagSet(v.h,  1) ? 'X' : ''), 0, 0, 0
+          (isFlagSet(v.h,  1) ? 'X' : ''), 
+          Number(v.px[2]), Number(v.px[1]), Number(v.px[0])
         ]]);
         break;
       case 'infos':
