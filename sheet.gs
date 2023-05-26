@@ -418,9 +418,9 @@ function logPlayerStats(sheet, playerObj, setOfVals) {
                 'AO'+newRow+':AV'+newRow];
 //        player.stats.p
         sheet.getRange(pos[playerNo]).setValues([[
-          (isFlagSet(v.h, 16) ? 'X' : ''), (isFlagSet(v.h,  8) ? 'X' : ''),
-          (isFlagSet(v.h,  4) ? 'X' : ''), (isFlagSet(v.h,  2) ? 'X' : ''),
-          (isFlagSet(v.h,  1) ? 'X' : ''), 
+          (isFlagSet(v.h,  1) ? 'X' : ''), (isFlagSet(v.h,  2) ? 'X' : ''),
+          (isFlagSet(v.h,  4) ? 'X' : ''), (isFlagSet(v.h,  8) ? 'X' : ''),
+          (isFlagSet(v.h, 16) ? 'X' : ''), 
           Number(v.px[2]), Number(v.px[1]), Number(v.px[0])
         ]]);
         break;
@@ -463,9 +463,9 @@ function logPlayerStats(sheet, playerObj, setOfVals) {
                       'AC'+newRow+':AG'+newRow, 
                       'AO'+newRow+':AS'+newRow];
           sheet.getRange(pos[playerNo]).setValues([[
-            (isFlagSet(v[playerNo], 16) ? 'X' : ''), (isFlagSet(v[playerNo],  8) ? 'X' : ''),
-            (isFlagSet(v[playerNo],  4) ? 'X' : ''), (isFlagSet(v[playerNo],  2) ? 'X' : ''),
-            (isFlagSet(v[playerNo],  1) ? 'X' : '')
+            (isFlagSet(v[playerNo],  1) ? 'X' : ''), (isFlagSet(v[playerNo],  2) ? 'X' : ''),
+            (isFlagSet(v[playerNo],  4) ? 'X' : ''), (isFlagSet(v[playerNo],  8) ? 'X' : ''),
+            (isFlagSet(v[playerNo], 16) ? 'X' : '')
           ]]);
         }
         break;

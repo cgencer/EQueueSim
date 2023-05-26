@@ -146,7 +146,7 @@ function initActionTiles(sheet) {
       if(!posBuffer){break;}
     }
   }
-//  console.log(actionTiles);
+  console.log(actionTiles);
   return actionTiles;
 }
 /**
@@ -266,6 +266,7 @@ function decodeSheetRow(i, srcValues, calcValues) {
       (srcValues[fromA1Notation('W1').column-1] || srcValues[fromA1Notation('AB1').column-1]) << 4 | 
       (srcValues[fromA1Notation('V1').column-1] || srcValues[fromA1Notation('AA1').column-1]) << 3 |
       // bit 2 is marker: adressed poisons / anonymous antidotes
+      1 << 2 |
       srcValues[fromA1Notation('U1').column-1] << 1 | 
       srcValues[fromA1Notation('T1').column-1],
 
@@ -276,9 +277,9 @@ function decodeSheetRow(i, srcValues, calcValues) {
       (srcValues[fromA1Notation('AM1').column-1] || srcValues[fromA1Notation('AR1').column-1]) << 5 | 
       (srcValues[fromA1Notation('AN1').column-1] || srcValues[fromA1Notation('AS1').column-1]) << 4 | 
       (srcValues[fromA1Notation('AO1').column-1] || srcValues[fromA1Notation('AT1').column-1]) << 3 | 
-      (srcValues[fromA1Notation('AU1').column-1] || srcValues[fromA1Notation('AX1').column-1] || srcValues[fromA1Notation('BA1').column-1]) << 2 |
+      (srcValues[fromA1Notation('AU1').column-1] || srcValues[fromA1Notation('AX1').column-1] || srcValues[fromA1Notation('BA1').column-1]) |
       (srcValues[fromA1Notation('AV1').column-1] || srcValues[fromA1Notation('AY1').column-1] || srcValues[fromA1Notation('BB1').column-1]) << 1 |
-      (srcValues[fromA1Notation('AW1').column-1] || srcValues[fromA1Notation('AZ1').column-1] || srcValues[fromA1Notation('BC1').column-1])
+      (srcValues[fromA1Notation('AW1').column-1] || srcValues[fromA1Notation('AZ1').column-1] || srcValues[fromA1Notation('BC1').column-1]) << 2
     };
   }
   return (obj);
