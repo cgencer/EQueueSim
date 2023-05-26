@@ -7,7 +7,7 @@ let tiles = [];
 let tileSelection;
 let maxRow = 150;
 let numPlayers = 4;
-let logSheet = createDumpster();
+const { logSheet, logsheetID, logsheetName } = createDumpster();
 var spreadSheet = SpreadsheetApp.getActiveSpreadsheet();
 
 function initGame(){
@@ -28,11 +28,4 @@ function initGame(){
   }
   console.log(players);
 
-
-/*
-logPlayerStats(logSheet, players[0], {info: 'test', hindrance: 21, poison: 6});
-logPlayerStats(logSheet, players[1], {info: 'test2'});
-logPlayerStats(logSheet, players[0], {hindrance: 21, poison: 6});
-logPlayerStats(logSheet, players[1], {hindrance: 25, poison: 3});
-*/
 }

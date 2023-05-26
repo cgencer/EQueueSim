@@ -152,21 +152,17 @@ function writeToMultipleRanges(spreadsheetId = yourspreadsheetId) {
     ['$20.50', '4', '3/1/2016']
   ];
 
-  const request = {
+  let majorRequest = {
     'valueInputOption': 'USER_ENTERED',
-    'data': [
-      {
-        'range': 'Sheet1!A1:A4',
-        'majorDimension': 'COLUMNS',
-        'values': columnAValues
-      },
-      {
-        'range': 'Sheet1!B1:D2',
-        'majorDimension': 'ROWS',
-        'values': rowValues
-      }
-    ]
+    'data': [{}]      // templates go into this array
   };
+  let templateCellSet = {
+    majorDimension: 'COLUMNS',    // COLUMNS / ROWS
+    range: [],
+    values: []
+  };
+
+
   try {
     const response = Sheets.Spreadsheets.Values.batchUpdate(request, spreadsheetId);
     if (response) {
@@ -310,10 +306,11 @@ function createDumpster () {
     allSheets = ssFile.getSheets();
   }
   lastSheet = allSheets[allSheets.length-1];
-  lastSheet.setName('@'+hour+':'+minutes);
+  const nama = '@'+hour+':'+minutes;
+  lastSheet.setName(nama);
   lastSheet.deleteRows(2, lastSheet.getMaxRows()-2);
   ssFile.setActiveSheet(lastSheet).getRange('A2:A2').activate();
-  return lastSheet;
+  return {logSheet: lastSheet, logsheetID: dumpsterId, logsheetName: nama};
 }
 
 // helper function to check any flag
@@ -321,6 +318,45 @@ function isFlagSet (actual, expected) {
   const flag = actual & expected;
   return flag === expected;
 };
+
+function cachedWrite(sheet, mode, y, x, v) {
+  const columnAValues = [
+    ['Item', 'Wheel', 'Door', 'Engine']
+  ];
+  const rowValues = [
+    ['Cost', 'Stocked', 'Ship Date'],
+    ['$20.50', '4', '3/1/2016']
+  ];
+
+  const request = {
+    'valueInputOption': 'USER_ENTERED',
+    'data': [
+      {
+        'range': 'Sheet1!A1:A4',
+        'majorDimension': 'COLUMNS',
+        'values': columnAValues
+      },
+      {
+        'range': 'Sheet1!B1:D2',
+        'majorDimension': 'ROWS',
+        'values': rowValues
+      }
+    ]
+  }
+
+  try {
+    const response = Sheets.Spreadsheets.Values.batchUpdate(request, spreadsheetId);
+    if (response) {
+      console.log(response);
+      return;
+    }
+    console.log('response null');
+  } catch (e) {
+    // TODO (developer) - Handle  exception
+    console.log('Failed with error %s', e.message);
+  }
+
+}
 
 function logPlayerStats(sheet, playerObj, setOfVals) {
   let playerNo, pos;
@@ -350,6 +386,9 @@ function logPlayerStats(sheet, playerObj, setOfVals) {
       case 'stat':
         sheet.getRange(newRow, playerCols[playerNo]+1).setValue(v);
         break;
+      case 'note':
+        sheet.getRange(newRow, playerCols[playerNo]+1).setNote(v);
+        break;
       case 'crystal':
         sheet.getRange(newRow, playerCols[playerNo]+2).setValue(v);
         break;
@@ -374,14 +413,14 @@ function logPlayerStats(sheet, playerObj, setOfVals) {
         break;
       case 'poiHind':     // hindrances & poisons together
         pos = [ 'E'+newRow+':L'+newRow, 
-                    'Q'+newRow+':X'+newRow, 
-                    'AC'+newRow+':AJ'+newRow, 
-                    'AO'+newRow+':AV'+newRow];
+                'Q'+newRow+':X'+newRow, 
+                'AC'+newRow+':AJ'+newRow, 
+                'AO'+newRow+':AV'+newRow];
 //        player.stats.p
         sheet.getRange(pos[playerNo]).setValues([[
-          (isFlagSet(v.h[playerNo], 16) ? 'X' : ''), (isFlagSet(v.h[playerNo],  8) ? 'X' : ''),
-          (isFlagSet(v.h[playerNo],  4) ? 'X' : ''), (isFlagSet(v.h[playerNo],  2) ? 'X' : ''),
-          (isFlagSet(v.h[playerNo],  1) ? 'X' : ''), 0, 0, 0
+          (isFlagSet(v.h, 16) ? 'X' : ''), (isFlagSet(v.h,  8) ? 'X' : ''),
+          (isFlagSet(v.h,  4) ? 'X' : ''), (isFlagSet(v.h,  2) ? 'X' : ''),
+          (isFlagSet(v.h,  1) ? 'X' : ''), 0, 0, 0
         ]]);
         break;
       case 'infos':
@@ -432,21 +471,3 @@ function logPlayerStats(sheet, playerObj, setOfVals) {
     }
   });
 }
-
-function logToSheet(url, message) {
-  var formSheet = SpreadsheetApp.getActiveSpreadsheet().getSheets()[1];
-  
-  // We wish to see what is the last response from the 'mute alerts' form
-  var toStopEmailsRow = formSheet.getLastRow();
-  var toStopEmails = formSheet.getRange(toStopEmailsRow, 2).getValue();  
-  
-  // The logger sheet
-  var sheet = SpreadsheetApp.getActiveSpreadsheet().getSheets()[0];
-  var row   = sheet.getLastRow() + 1;    
-  var time  = new Date();  
-  sheet.getRange(row,1).setValue(time);
-  sheet.getRange(row,2).setValue(message + " : " + url);
-}
-
-
-

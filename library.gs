@@ -280,20 +280,23 @@ function decodeSheetRow(i, srcValues, calcValues) {
   return (obj);
 }
 
-function modifyPoisons(playerStats, incomeVal, outgoVal, log) {
-  let oldPoison = playerStats.p;
-  let oldSPoison = playerStats.sp;
+function modifyPoisons(playerObj, incomeVal, outgoVal, logSheet) {
+  let oldP = playerObj.stats.p;
+  let oldSP = playerObj.stats.sp;
   //==============================================
   // 0x111  first 2 bits: value
   //   \---> if set: addressed poison nr (OUTGO)
   //(3rd bit) clear: number of antidotes (INCOME)
   //==============================================
 
-  if(log){
-
+  if(logSheet){
+    logPlayerStats(logSheet, playerObj, {
+      poiHind: playerObj.stats,
+      noCR: true
+    });
   }
 
-  return {p: oldPoison, sp: oldSPoison};
+  return {p: oldP, sp: oldSP};
 }
 
 function modifyHindrances(playerObj, incomeVal, outgoVal, logSheet) {
