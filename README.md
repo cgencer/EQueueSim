@@ -17,6 +17,11 @@ Following my gameplay rules, the simulator takes random sets of cards from the s
 the hexagonal action-tiles placements (within memory) and depending on players choices, takes action, plays cards, takes 
 income etc.
 
+This is the sample output from a gameplay run (still working on)...
+
+[![Example gameplay](screenshots/halfway-output.png)](https://raw.githubusercontent.com/cgencer/EQueueSim/main/screenshots/halfway-output.png)
+
+
 ### Some notes on the sheet requirements and its connection to Photoshop
 
 The sheet itself is optimized for producing the cards automatically trough data import via CSV files. Thus, the organization of the variables is heavily bound to the variables within Photoshop. Even though, it does a heavy task for mankind, it is important to feed Photoshop with the right columnar-view and also post-edit the CSV-file trough a text-editor. Especially filling in ,'', values where only ,, is present is quite important. Photoshop sucks at giving correct error-phrases, so it is pretty a long trial-error fight until I could produce all 200 cards. Even then, I found out that some layers were not toggled as supposed they should do, resulting with 10-20 wrongly colored cards within the deck.
