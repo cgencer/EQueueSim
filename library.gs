@@ -28,16 +28,29 @@ function initPlayers(numPlayers, tileSet) {
 
   for(let p=0; p<4; p++){
     // OUTGOs are yellow shields! / INCOMEs are shields with MINUS
-    let pNewStats = modifyHindrances(players[p], tileSet.i[p], tileSet.o[p]);
-    players[p].stats.h = pNewStats.h;
-    players[p].stats.sh = pNewStats.sh;
+
+    pNewStats = modifyHindrances(players[p], tileSet.i[p], tileSet.o[p]);
+    _.set(players, '['+(p%4)+'].stats.h', pNewStats.h);
+    _.set(players, '['+(p%4)+'].stats.sh', pNewStats.sh);
     latestHindrances[p] = pNewStats.h;
+
+    pNewStats = modifyPoisons(players[p], tileSet.i[p], tileSet.o[p]);
+    _.set(players, '['+(p%4)+'].stats.px[0]', pNewStats.px[0]);
+    _.set(players, '['+(p%4)+'].stats.px[1]', pNewStats.px[1]);
+    _.set(players, '['+(p%4)+'].stats.px[2]', pNewStats.px[2]);
+    _.set(players, '['+(p%4)+'].stats.sp', Number(pNewStats.sp));
+
+    logPlayerStats(logSheet, players[p], {
+      poiHind: players[p].stats,
+      noCR: true
+    });
+
   }
 
   logPlayerStats(logSheet, null, {
     infos: ['places workers'], 
     stats: tileSet.l, 
-    hindrances: latestHindrances
+      noCR: true
   });
 
   logPlayerStats(logSheet, null, {
