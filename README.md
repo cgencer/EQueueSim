@@ -48,3 +48,10 @@ Lodash for Google Apps Script is made available as a script library. This is how
     Enter the project key (1SQ0PlSMwndIuOAgtVJdjxsuXueECtY9OGejVDS37ckSVbMll73EXf2PW) in the "Find a Library" field, and choose "Select". (If you have copied the library, enter instead the project key of your copy.)
     Select the highest version number, and choose Lodash as the identifier. (Do not turn on Development Mode unless you know what you are doing. The development version may not work.)
     Press Save. You can now use the Lodash library in your code.
+
+I also added BBLog logging library:
+
+	BBLog - persistent multi-level logging to a spreadsheet. It wraps BetterLog and mainly automatically adds the function name to each line of trace (configurable). ID: 1kzzYZhgODZluRmjsjh7t3O-ftmFAF9h1jaRHU0rOdf9irF0VUiJW33Kt.
+
+
+
