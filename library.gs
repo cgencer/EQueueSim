@@ -63,7 +63,7 @@ function initPlayerDecks(sheet, logSheet, players, deckIndexes, workerSet, numpl
     players[j].stats.px = [0,0,0];
   }
 
-  logPlayerStats(logSheet, players[0], {
+  logPlayerStats(logSheet, null, {
     infos: ['picks cards'], 
     stats: [
         players[0].deckIds.join(';'), 
@@ -71,7 +71,8 @@ function initPlayerDecks(sheet, logSheet, players, deckIndexes, workerSet, numpl
         players[2].deckIds.join(';'), 
         players[3].deckIds.join(';')
     ],
-    calmstress: 0
+    calmstress: 0,
+    noCR: true
   });
 
   for (let x = 0; x < numplayers; x++) {

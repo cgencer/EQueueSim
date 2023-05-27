@@ -448,7 +448,7 @@ function logPlayerStats(sheet, playerObj, setOfVals) {
         break;
       case 'calmstress':
         for(playerNo=0; playerNo<4; playerNo++)
-          sheet.getRange(newRow, playerCols[playerNo]+3).setValue(v+' / '+v);
+          sheet.getRange(newRow, playerCols[playerNo]+3).setValue(v[playerNo]+' / '+v[playerNo]);
         break;
       case 'poisons':
         _.each(v, function(c){
