@@ -17,9 +17,9 @@ Cards having ‘next turn’ remoark attached to the hindrance icons (in the res
 On setup players having karmic cards adds cubes onto the named tracks.
 
 On end of each round (after playing out all possible cards) summarization of hindrances occurs:
-Count cubes on each track
-Leave 1 cube for each player having the most cubes on a track
-On a tie, every player who share the tie leaves a cube on the track
-All other cubes go back to the players repositories
-Players, who have 3+ cubes on different tracks at this point receive a cube onto their Dukkha track.
-Players having unresolved karmic cards adds cubes onto the named tracks on begin of each round.
+- Count cubes on each track
+- Leave 1 cube for each player having the most cubes on a track
+- On a tie, every player who share the tie leaves a cube on the track
+- All other cubes go back to the players repositories
+- Players, who have 3+ cubes on different tracks at this point receive a cube onto their Dukkha track.
+- Players having unresolved karmic cards adds cubes onto the named tracks on begin of each round.
