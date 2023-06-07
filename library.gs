@@ -1,9 +1,11 @@
 function initPlayers(numPlayers, tileSet) {
   let players = [];
+  let playerColors = ['red', 'yellow', 'green', 'blue'];
   let latestHindrances = [];
   for (let j = 0; j < numPlayers; j++) {
     players[j] = {
       index: j,
+      color: playerColors[j],
       deck: [],
       deckIds: [],
       activated: [],
@@ -474,6 +476,7 @@ function playACard(logSheet, players, playerNo) {
         _.set(players, '['+(playerNo%4)+'].stats.q', pObj.stats.q + activatedCard.act.inRoundQ);
       }
       pNewStats = modifyHindrances(pObj, activatedCard.income, activatedCard.outgo);
+      gameBoardHindrances(pObj, activatedCard);
       _.set(players, '['+(playerNo%4)+'].stats.h', pNewStats.h);
       _.set(players, '['+(playerNo%4)+'].stats.sh', pNewStats.sh);
 
@@ -492,11 +495,75 @@ function playACard(logSheet, players, playerNo) {
         info: 'plays a card', 
         stat: '"' + activatedCard.title + '" (' + activatedCard.id + ')',
         note: activatedCard.title + '\n' + JSON.stringify(activatedCard, null, 4),
-        poiHind: pObj.stats,
         noCR: true
       });
+
+      return activatedCard;
     }
   }
+}
+
+function gameBoardHindrances(playerObj, card) {
+  // decode hindrances
+  let obstacles = [];
+  let intacles = [];
+  const income = card.income >> 3;
+  const outgo = card.outgo >> 3;
+  // add them to the global tracks
+  if(isFlagSet((outgo &  1),  1)){
+    obstacles.push('1'); 
+    gameBoard.tracks.hindrance1.push(playerObj.color);
+  }
+  if(isFlagSet((outgo &  2),  2)){ 
+    obstacles.push('2'); 
+    gameBoard.tracks.hindrance2.push(playerObj.color);
+  }
+  if(isFlagSet((outgo &  4),  4)){ 
+    obstacles.push('3'); 
+    gameBoard.tracks.hindrance3.push(playerObj.color);
+  }
+  if(isFlagSet((outgo &  8),  8)){ 
+    obstacles.push('4'); 
+    gameBoard.tracks.hindrance4.push(playerObj.color);
+  }
+  if(isFlagSet((outgo & 16), 16)){ 
+    obstacles.push('5'); 
+    gameBoard.tracks.hindrance5.push(playerObj.color);
+  }
+  if(isFlagSet((income &  1),  1)){
+    intacles.push('1'); 
+    gameBoard.tracks.hindrance1.shift();
+  }
+  if(isFlagSet((income &  2),  2)){ 
+    intacles.push('2'); 
+    gameBoard.tracks.hindrance2.shift();
+  }
+  if(isFlagSet((income &  4),  4)){ 
+    intacles.push('3'); 
+    gameBoard.tracks.hindrance3.shift();
+  }
+  if(isFlagSet((income &  8),  8)){ 
+    intacles.push('4'); 
+    gameBoard.tracks.hindrance4.shift();
+  }
+  if(isFlagSet((income & 16), 16)){ 
+    intacles.push('5'); 
+    gameBoard.tracks.hindrance5.shift();
+  }
+
+  logPlayerStats(logSheet, playerObj, {
+    gameboard: {
+      value: 'puts cubes onto hindrance-tracks: '+obstacles.join(' & ')+
+             (intacles.length>0?'\nremoves cubes from tracks: '+intacles.join(' & '):''),
+      note: 'track-hindrance-1: '+gameBoard.tracks.hindrance1.join(', ')+'\n'+
+            'track-hindrance-2: '+gameBoard.tracks.hindrance2.join(', ')+'\n'+
+            'track-hindrance-3: '+gameBoard.tracks.hindrance3.join(', ')+'\n'+
+            'track-hindrance-4: '+gameBoard.tracks.hindrance4.join(', ')+'\n'+
+            'track-hindrance-5: '+gameBoard.tracks.hindrance5.join(', ')
+    },
+    noCR: true,
+  });
+
 }
 
 function addSlave(p) {

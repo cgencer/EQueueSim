@@ -4,13 +4,24 @@ var actionTiles = [];
 var dones = [];
 var players = [];
 let tiles = [];
+let gameBoard = {
+  tracks: {
+    hindrance1: [],
+    hindrance2: [],
+    hindrance3: [],
+    hindrance4: [],
+    hindrance5: [],
+    dukkha: 0,
+    sukkha: 0
+  }
+};
 let tileSelection;
 let maxRow = 150;
 let numPlayers = 4;
 const { logSheet, logsheetID, logsheetName } = createDumpster();
 var spreadSheet = SpreadsheetApp.getActiveSpreadsheet();
 
-function initGame(){
+function doGet(){
   tiles = initActionTiles(spreadSheet);
   let resultTiles = chooseTiles(logSheet, tiles);
   players = initPlayers(numPlayers, resultTiles);

@@ -369,6 +369,7 @@ function logPlayerStats(sheet, playerObj, setOfVals) {
 
   let newRow = (_.has(setOfVals, 'noCR')) ? sheet.getMaxRows() : sheet.getMaxRows() + 1; 
   let i = 0;
+  let n = '';
 
   _.forIn(setOfVals, function(v, k){
     if(!_.isNull(playerObj))
@@ -377,6 +378,10 @@ function logPlayerStats(sheet, playerObj, setOfVals) {
       v = _.fill(Array(4), v);
     else if(_.isNull(playerObj) && _.isArray(v) && v.length==1)       
       v = _.fill(Array(4), v[0]);
+    else if(_.isObject(v) && _.has(v, 'value') && _.has(v, 'note')){
+      n = v.note;
+      v = v.value;
+    }
     switch(k){
       case 'noCR':
         break;
@@ -400,7 +405,23 @@ function logPlayerStats(sheet, playerObj, setOfVals) {
         sheet.getRange(newRow, playerCols[playerNo]+3).setValue(
             (playerObj.stats.c) + ' / ' + playerObj.stats.s + v);
         break;
+      case 'gameboard':
+        const cols = [fromA1Notation('E1').column,
+                      fromA1Notation('K1').column,
+                      fromA1Notation('Q1').column,
+                      fromA1Notation('W1').column]; 
+        if(v!=''){
+          if(n!=''){
+            sheet.getRange(newRow, cols[playerNo]).setValue(v).setNote(n);
+          }else{
+            sheet.getRange(newRow, cols[playerNo]).setValue(v);          
+          }
+        }
+        break;
+      case 'playerboard':
+        break;
       case 'hindrance':
+/*
         pos = [ 'E'+newRow+':I'+newRow, 
                     'Q'+newRow+':U'+newRow, 
                     'AC'+newRow+':AG'+newRow, 
@@ -410,19 +431,22 @@ function logPlayerStats(sheet, playerObj, setOfVals) {
           (isFlagSet(v[playerNo],  4) ? 'X' : ''), (isFlagSet(v[playerNo],  2) ? 'X' : ''),
           (isFlagSet(v[playerNo],  1) ? 'X' : '')
         ]]);
+*/
         break;
       case 'poiHind':     // hindrances & poisons together
+// changing flag-display into readable board text for gameboard or playerboards
+/*
         pos = [ 'E'+newRow+':L'+newRow, 
                 'Q'+newRow+':X'+newRow, 
                 'AC'+newRow+':AJ'+newRow, 
                 'AO'+newRow+':AV'+newRow];
-//        player.stats.p
         sheet.getRange(pos[playerNo]).setValues([[
           (isFlagSet(v.h,  1) ? 'X' : ''), (isFlagSet(v.h,  2) ? 'X' : ''),
           (isFlagSet(v.h,  4) ? 'X' : ''), (isFlagSet(v.h,  8) ? 'X' : ''),
           (isFlagSet(v.h, 16) ? 'X' : ''), 
           Number(v.px[2]), Number(v.px[1]), Number(v.px[0])
         ]]);
+*/
         break;
       case 'infos':
         _.each(v, function(c){
@@ -471,4 +495,31 @@ function logPlayerStats(sheet, playerObj, setOfVals) {
         break;
     }
   });
+}
+
+function generateXML(request) {
+  
+  var SS_id = request.parameter.ss,
+      sheet_name = request.parameter.list;
+  
+  var spreadsheet = SpreadsheetApp.openById(SS_id),
+      sheet = spreadsheet.getSheetByName(sheet_name),
+      dataRange = sheet.getDataRange().getValues();
+  
+  var height = dataRange.length,
+      width = dataRange[0].length;
+  
+  var title = dataRange[0];
+  
+  var xml = "<data>";
+  for(var i=1; i < height; i++){
+    xml = xml + "<row>";
+    for(var j=0; j < width; j++){
+      xml = xml + '<column id="'+title[j]+'">'+dataRange[i][j]+"</column>";
+        }
+    xml = xml + "</row>";     
+      }
+  xml = xml + "</data>";
+  
+  return ContentService.createTextOutput(xml).setMimeType(ContentService.MimeType.XML);
 }
