@@ -553,8 +553,9 @@ function gameBoardHindrances(playerObj, card) {
 
   logPlayerStats(logSheet, playerObj, {
     gameboard: {
-      value: 'puts cubes onto hindrance-tracks: '+obstacles.join(' & ')+
-             (intacles.length>0?'\nremoves cubes from tracks: '+intacles.join(' & '):''),
+      value: 
+  (obstacles.length>0 ? 'puts cubes onto hindrance-tracks: '+obstacles.join(' & ') : '') +
+  ( intacles.length>0 ? '\nremoves cubes from tracks: '+intacles.join(' & ') : ''),
       note: 'track-hindrance-1: '+gameBoard.tracks.hindrance1.join(', ')+'\n'+
             'track-hindrance-2: '+gameBoard.tracks.hindrance2.join(', ')+'\n'+
             'track-hindrance-3: '+gameBoard.tracks.hindrance3.join(', ')+'\n'+

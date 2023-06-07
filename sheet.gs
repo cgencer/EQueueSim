@@ -361,9 +361,9 @@ function cachedWrite(sheet, mode, y, x, v) {
 function logPlayerStats(sheet, playerObj, setOfVals) {
   let playerNo, pos;
   let playerCols = [fromA1Notation('A1').column, 
+                    fromA1Notation('G1').column, 
                     fromA1Notation('M1').column, 
-                    fromA1Notation('Y1').column, 
-                    fromA1Notation('AK1').column];
+                    fromA1Notation('S1').column];
   let cols = ['info', 'stat', 'crystals', 'calmstress', 
   'hindrance', '', '', '', '', 'poison', '', ''];
 
@@ -374,13 +374,16 @@ function logPlayerStats(sheet, playerObj, setOfVals) {
   _.forIn(setOfVals, function(v, k){
     if(!_.isNull(playerObj))
       playerNo = _.isInteger(playerObj) ? playerObj : playerObj.index;
+
     if(_.isNull(playerObj) && _.isInteger(v))
       v = _.fill(Array(4), v);
-    else if(_.isNull(playerObj) && _.isArray(v) && v.length==1)       
+
+    else if(_.isNull(playerObj) && _.isArray(v) && v.length == 1)       
       v = _.fill(Array(4), v[0]);
-    else if(_.isObject(v) && _.has(v, 'value') && _.has(v, 'note')){
-      n = v.note;
-      v = v.value;
+
+    else if(_.isPlainObject(v)){
+      n = _.has(v, 'note') ? v.note : '';
+      v = _.has(v, 'value') ? v.value : '';
     }
     switch(k){
       case 'noCR':
@@ -410,13 +413,10 @@ function logPlayerStats(sheet, playerObj, setOfVals) {
                       fromA1Notation('K1').column,
                       fromA1Notation('Q1').column,
                       fromA1Notation('W1').column]; 
-        if(v!=''){
-          if(n!=''){
-            sheet.getRange(newRow, cols[playerNo]).setValue(v).setNote(n);
-          }else{
-            sheet.getRange(newRow, cols[playerNo]).setValue(v);          
-          }
-        }
+        if(v!='')
+          sheet.getRange(newRow, cols[playerNo]).setValue(v);
+        if(n!='')
+          sheet.getRange(newRow, cols[playerNo]).setNote(n);
         break;
       case 'playerboard':
         break;
