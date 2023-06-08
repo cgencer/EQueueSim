@@ -556,15 +556,30 @@ function gameBoardHindrances(playerObj, card) {
       value: 
   (obstacles.length>0 ? 'puts cubes onto hindrance-tracks: '+obstacles.join(' & ') : '') +
   ( intacles.length>0 ? '\nremoves cubes from tracks: '+intacles.join(' & ') : ''),
-      note: 'track-hindrance-1: '+gameBoard.tracks.hindrance1.join(', ')+'\n'+
-            'track-hindrance-2: '+gameBoard.tracks.hindrance2.join(', ')+'\n'+
-            'track-hindrance-3: '+gameBoard.tracks.hindrance3.join(', ')+'\n'+
-            'track-hindrance-4: '+gameBoard.tracks.hindrance4.join(', ')+'\n'+
-            'track-hindrance-5: '+gameBoard.tracks.hindrance5.join(', ')
+      note: 'hindrances:\n\n'+
+            'track-1: '+gameBoard.tracks.hindrance1.join(', ')+'\n'+
+            'track-2: '+gameBoard.tracks.hindrance2.join(', ')+'\n'+
+            'track-3: '+gameBoard.tracks.hindrance3.join(', ')+'\n'+
+            'track-4: '+gameBoard.tracks.hindrance4.join(', ')+'\n'+
+            'track-5: '+gameBoard.tracks.hindrance5.join(', ')+'\n\n'+
+            'top1: '+topContributers(gameBoard.tracks.hindrance1)+'\n'+
+            'top2: '+topContributers(gameBoard.tracks.hindrance2)+'\n'+
+            'top3: '+topContributers(gameBoard.tracks.hindrance3)+'\n'+
+            'top4: '+topContributers(gameBoard.tracks.hindrance4)+'\n'+
+            'top5: '+topContributers(gameBoard.tracks.hindrance5)
     },
     noCR: true,
   });
 
+}
+
+// fetches top contributers on each track in an ugly way...
+function topContributers(theArr) {
+  if(theArr.length>0){
+    const arr = _.invertBy(_.countBy(theArr));
+    return arr[ _.max(_.keys(arr)) ];
+  }
+  return [];
 }
 
 function addSlave(p) {
