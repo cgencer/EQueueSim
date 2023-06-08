@@ -37,6 +37,7 @@ function doGet(){
     }
     logSheet.insertRowsAfter(logSheet.getMaxRows(), 1);
   }
+  roundEnding(logSheet, players);
   console.log(players);
 
 }

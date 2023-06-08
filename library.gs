@@ -561,12 +561,7 @@ function gameBoardHindrances(playerObj, card) {
             'track-2: '+gameBoard.tracks.hindrance2.join(', ')+'\n'+
             'track-3: '+gameBoard.tracks.hindrance3.join(', ')+'\n'+
             'track-4: '+gameBoard.tracks.hindrance4.join(', ')+'\n'+
-            'track-5: '+gameBoard.tracks.hindrance5.join(', ')+'\n\n'+
-            'top1: '+topContributers(gameBoard.tracks.hindrance1)+'\n'+
-            'top2: '+topContributers(gameBoard.tracks.hindrance2)+'\n'+
-            'top3: '+topContributers(gameBoard.tracks.hindrance3)+'\n'+
-            'top4: '+topContributers(gameBoard.tracks.hindrance4)+'\n'+
-            'top5: '+topContributers(gameBoard.tracks.hindrance5)
+            'track-5: '+gameBoard.tracks.hindrance5.join(', ')
     },
     noCR: true,
   });
@@ -580,6 +575,28 @@ function topContributers(theArr) {
     return arr[ _.max(_.keys(arr)) ];
   }
   return [];
+}
+
+function roundEnding(logSheet, players) {
+  const playerColors = ['red', 'yellow', 'green', 'blue'];
+  const allRemaining = _.concat(topContributers(gameBoard.tracks.hindrance1), topContributers(gameBoard.tracks.hindrance2), topContributers(gameBoard.tracks.hindrance3), topContributers(gameBoard.tracks.hindrance4), topContributers(gameBoard.tracks.hindrance5));
+
+  for(let i=0;i<4;i++){
+    logPlayerStats(logSheet, players[i], {
+      noCR: true,
+      info: 'round clean-up',
+      gameboard: {
+        value: _.indexOf(allRemaining, playerColors[i]) == -1 ? '' : 
+        'leaves ' + _.countBy(allRemaining)[playerColors[i]] + ' cubes on tracks.',
+        note: 'hindrance-tracks left-overs:\n\n'+
+              'top1: '+topContributers(gameBoard.tracks.hindrance1)+'\n'+
+              'top2: '+topContributers(gameBoard.tracks.hindrance2)+'\n'+
+              'top3: '+topContributers(gameBoard.tracks.hindrance3)+'\n'+
+              'top4: '+topContributers(gameBoard.tracks.hindrance4)+'\n'+
+              'top5: '+topContributers(gameBoard.tracks.hindrance5)
+      }
+    });
+  }
 }
 
 function addSlave(p) {

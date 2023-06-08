@@ -367,7 +367,7 @@ function logPlayerStats(sheet, playerObj, setOfVals) {
   let cols = ['info', 'stat', 'crystals', 'calmstress', 
   'hindrance', '', '', '', '', 'poison', '', ''];
 
-  let newRow = (_.has(setOfVals, 'noCR')) ? sheet.getMaxRows() : sheet.getMaxRows() + 1; 
+  let newRow = (_.has(setOfVals, 'noCR') && setOfVals['noCR'] === true) ? sheet.getMaxRows() : sheet.getMaxRows() + 1; 
   let i = 0;
   let n = '';
 
