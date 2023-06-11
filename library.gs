@@ -31,16 +31,16 @@ function initPlayers(numPlayers, tileSet) {
   for(let p=0; p<4; p++){
     // OUTGOs are yellow shields! / INCOMEs are shields with MINUS
 
-    pNewStats = modifyHindrances(players[p], tileSet.i[p], tileSet.o[p]);
+    pNewStats = applyCard2Hindrances(players[p], tileSet.i[p], tileSet.o[p]);
     _.set(players, '['+(p%4)+'].stats.h', pNewStats.h);
     _.set(players, '['+(p%4)+'].stats.sh', pNewStats.sh);
     latestHindrances[p] = pNewStats.h;
 
-    pNewStats = modifyPoisons(players[p], tileSet.i[p], tileSet.o[p]);
+/*    pNewStats = modifyPoisons(players[p], tileSet.i[p], tileSet.o[p]);
     _.set(players, '['+(p%4)+'].stats.px[0]', pNewStats.px[0]);
     _.set(players, '['+(p%4)+'].stats.px[1]', pNewStats.px[1]);
     _.set(players, '['+(p%4)+'].stats.px[2]', pNewStats.px[2]);
-    _.set(players, '['+(p%4)+'].stats.sp', Number(pNewStats.sp));
+*/    _.set(players, '['+(p%4)+'].stats.sp', Number(pNewStats.sp));
 
     logPlayerStats(logSheet, players[p], {
       poiHind: players[p].stats,
@@ -147,7 +147,7 @@ function initActionTiles(sheet) {
 
     decoded.side = (tileIndex % 2 == 0) ? coin : !coin;
     actionTiles.push(
-      _.pick(decoded, ['pos', 'x', 'y', 'type', 'side', 'xp', 'no', 'id', 'income', 'outgo', 'players', 'bonuscard', 'stage', 'title', 'sibling']));
+      _.pick(decoded, ['pos', 'x', 'y', 'type', 'side', 'xp', 'no', 'id', 'income', 'outgo', 'poisons', 'antidotes', 'players', 'bonuscard', 'stage', 'title', 'sibling']));
     console.info('>>> placing the tile '+decoded.id+' onto grid '+grid.getHexAt(posBuffer).getKey()+' with side '+decoded.side);
 
     // every half of a tile is @same location
@@ -255,6 +255,23 @@ function decodeSheetRow(i, srcValues, calcValues) {
     if(!_.isUndefined(xtal) && !_.isUndefined(srcValues[colPay]))
       xtal *= (srcValues[colPay] == true) ? -1 : 1;
   */
+
+//    drop3     | drop2     | drop1
+//    AU  AV  AW  AX  AY  AZ  BA  BB  BC
+//    3 | 2 | 1 | 3 | 2 | 1 | 3 | 2 | 1
+//    XX        | XX        | XX
+    let poisoned = 
+    ((srcValues[fromA1Notation('AV1').column-1] << 1 | srcValues[fromA1Notation('AW1').column-1]) << 4) |
+    ((srcValues[fromA1Notation('AY1').column-1] << 1 | srcValues[fromA1Notation('AZ1').column-1]) << 2) |
+    ((srcValues[fromA1Notation('BB1').column-1] << 1 | srcValues[fromA1Notation('BC1').column-1]));
+
+    if (srcValues[fromA1Notation('AU1').column-1])
+      poisoned |= 48;
+    if (srcValues[fromA1Notation('AX1').column-1])
+      poisoned |= 12;
+    if (srcValues[fromA1Notation('BA1').column-1])
+      poisoned |= 3;
+
     obj = {
       no: i,
       id: srcValues[0],
@@ -276,32 +293,30 @@ function decodeSheetRow(i, srcValues, calcValues) {
       stress: ((io[14] && io[15] && io[16]) ? 3 : ((io[14] && io[15]) ? 2 : (io[14] ? 1 : 0))),
 
       income: 
-      (srcValues[fromA1Notation('Z1').column-1] || srcValues[fromA1Notation('AE1').column-1]) << 7 |
-      (srcValues[fromA1Notation('Y1').column-1] || srcValues[fromA1Notation('AD1').column-1]) << 6 | 
-      (srcValues[fromA1Notation('X1').column-1] || srcValues[fromA1Notation('AC1').column-1]) << 5 | 
-      (srcValues[fromA1Notation('W1').column-1] || srcValues[fromA1Notation('AB1').column-1]) << 4 | 
-      (srcValues[fromA1Notation('V1').column-1] || srcValues[fromA1Notation('AA1').column-1]) << 3 |
-      // bit 2 is marker: adressed poisons / anonymous antidotes
-      1 << 2 |
-      srcValues[fromA1Notation('U1').column-1] << 1 | 
-      srcValues[fromA1Notation('T1').column-1],
+      (srcValues[fromA1Notation('Z1').column-1] || srcValues[fromA1Notation('AE1').column-1]) << 4 |
+      (srcValues[fromA1Notation('Y1').column-1] || srcValues[fromA1Notation('AD1').column-1]) << 3 | 
+      (srcValues[fromA1Notation('X1').column-1] || srcValues[fromA1Notation('AC1').column-1]) << 2 | 
+      (srcValues[fromA1Notation('W1').column-1] || srcValues[fromA1Notation('AB1').column-1]) << 1 | 
+      (srcValues[fromA1Notation('V1').column-1] || srcValues[fromA1Notation('AA1').column-1]) << 0,
+
+      antidotes: 
+      srcValues[fromA1Notation('U1').column-1] << 1 | srcValues[fromA1Notation('T1').column-1],
 
       outgo: 
       // higher 5 bits are hindrances, lower 3 bits are poisons
-      (srcValues[fromA1Notation('AK1').column-1] || srcValues[fromA1Notation('AP1').column-1]) << 7 |
-      (srcValues[fromA1Notation('AL1').column-1] || srcValues[fromA1Notation('AQ1').column-1]) << 6 | 
-      (srcValues[fromA1Notation('AM1').column-1] || srcValues[fromA1Notation('AR1').column-1]) << 5 | 
-      (srcValues[fromA1Notation('AN1').column-1] || srcValues[fromA1Notation('AS1').column-1]) << 4 | 
-      (srcValues[fromA1Notation('AO1').column-1] || srcValues[fromA1Notation('AT1').column-1]) << 3 | 
-      (srcValues[fromA1Notation('AU1').column-1] || srcValues[fromA1Notation('AX1').column-1] || srcValues[fromA1Notation('BA1').column-1]) |
-      (srcValues[fromA1Notation('AV1').column-1] || srcValues[fromA1Notation('AY1').column-1] || srcValues[fromA1Notation('BB1').column-1]) << 1 |
-      (srcValues[fromA1Notation('AW1').column-1] || srcValues[fromA1Notation('AZ1').column-1] || srcValues[fromA1Notation('BC1').column-1]) << 2
+      (srcValues[fromA1Notation('AK1').column-1] || srcValues[fromA1Notation('AP1').column-1]) << 4 |
+      (srcValues[fromA1Notation('AL1').column-1] || srcValues[fromA1Notation('AQ1').column-1]) << 3 | 
+      (srcValues[fromA1Notation('AM1').column-1] || srcValues[fromA1Notation('AR1').column-1]) << 2 | 
+      (srcValues[fromA1Notation('AN1').column-1] || srcValues[fromA1Notation('AS1').column-1]) << 1 | 
+      (srcValues[fromA1Notation('AO1').column-1] || srcValues[fromA1Notation('AT1').column-1]) << 0,
+
+      poisons: poisoned
     };
   }
   return (obj);
 }
 
-function modifyPoisons(playerObj, incomeVal, outgoVal) {
+function modifyPoisons(logSheet, playerObj, incomeVal, outgoVal) {
   let oldSP = playerObj.stats.sp;
   let oldPX = playerObj.stats.px;
   //==============================================
@@ -310,7 +325,7 @@ function modifyPoisons(playerObj, incomeVal, outgoVal) {
   //(3rd bit) clear: number of antidotes (INCOME)
   //==============================================
   outgoVal &= 7;    // mask out upper bits
-  incomeVal &= 3;
+  incomeVal &= 7;
 
   if(isFlagSet(outgoVal, 1))
     oldPX[0]++;
@@ -323,7 +338,7 @@ function modifyPoisons(playerObj, incomeVal, outgoVal) {
   // 2. deduct outgo's from the current poisons
   // 3. add new antidotes number as saved SP's
 
-
+  // subtract, if income is set
   if(oldSP>0 && isFlagSet(incomeVal, 2) && isFlagSet(incomeVal, 1)){
     oldPX[2]--;
     oldSP--;
@@ -338,11 +353,21 @@ function modifyPoisons(playerObj, incomeVal, outgoVal) {
   }
 
   // save remaining SPs back...
+  logPlayerStats(logSheet, playerObj, {
+    playerboard: {
+      value: '',
+      note: 'poisons:\n\n'+
+            'poison-1: '+oldPX[0]+'\n'+
+            'poison-2: '+oldPX[1]+'\n'+
+            'poison-3: '+oldPX[2]+'\n'
+    },
+    noCR: true,
+  });
 
   return {sp: oldSP, px: oldPX};
 }
 
-function modifyHindrances(playerObj, incomeVal, outgoVal) {
+function applyCard2Hindrances(playerObj, incomeVal, outgoVal) {
   // OUTGOs are yellow shields! / INCOMEs are shields with MINUS
   let oldH = playerObj.stats.h;
   let oldSH = playerObj.stats.sh;
@@ -362,8 +387,8 @@ function modifyHindrances(playerObj, incomeVal, outgoVal) {
   //
   // set the hindrance-flags according to outgo
 
-  oldH |= (outgoVal >> 3);                                                    // 32->4
-  oldSH |= (incomeVal >> 3);
+  oldH |= outgoVal;
+  oldSH |= incomeVal;
   // create a diff of flags and clear them on the hindrance-flags
   // diff is what is set on both sides, so only clear those flags afterwards
   let diff = oldH & oldSH;
@@ -424,8 +449,13 @@ function playACard(logSheet, players, playerNo) {
   let pNewStats, immediateEarn, tempXP;
   const pObj = players[playerNo];
 
+  // if crystals still exist & personal deck's not finished 
   if(pObj.stats.q > 0 && pObj.deck.length > 0){
 
+    // TO-DO: Implement the selection of card based on its
+    // score and advantages and splice it instead of popping it...
+
+    // if available crystals are more than the last cards' cost
     if(pObj.stats.q >= pObj.deck[ _.size(pObj.deck)-1 ].q){
 
       // priority-values are:
@@ -441,10 +471,12 @@ function playACard(logSheet, players, playerNo) {
       // create a sorting based on the priority-score for cards
 
       const activatedCard = pObj.deck.pop();
+      console.log('we have an active card!: '+activatedCard.id);
       _.set(players, '['+(playerNo%4)+'].deckIds', _.pull(pObj.deckIds, activatedCard.id));
 
       // pay the crystals
-      _.set(players, '['+(playerNo%4)+'].stats.xp', pObj.stats.q - activatedCard.q);
+      _.set(players, '['+(playerNo%4)+'].stats.q', 
+        _.get(players, '['+(playerNo%4)+'].stats.q') - activatedCard.q);
 
       // check for the need to push (e.g. receive crystal immediatly)
 
@@ -475,15 +507,18 @@ function playACard(logSheet, players, playerNo) {
       }else{
         _.set(players, '['+(playerNo%4)+'].stats.q', pObj.stats.q + activatedCard.act.inRoundQ);
       }
-      pNewStats = modifyHindrances(pObj, activatedCard.income, activatedCard.outgo);
-      gameBoardHindrances(pObj, activatedCard);
+      applyHindrances2Gameboard(pObj, activatedCard);
+      pNewStats = applyCard2Hindrances(pObj, activatedCard.income, activatedCard.outgo);
       _.set(players, '['+(playerNo%4)+'].stats.h', pNewStats.h);
       _.set(players, '['+(playerNo%4)+'].stats.sh', pNewStats.sh);
 
-      pNewStats = modifyPoisons(pObj, activatedCard.income, activatedCard.outgo);
+//      pNewStats = modifyPoisons(logSheet, pObj, activatedCard.income, activatedCard.outgo);
+      applyPoisons2Playerboard(pObj, activatedCard);
+/*
       _.set(players, '['+(playerNo%4)+'].stats.px[0]', pNewStats.px[0]);
       _.set(players, '['+(playerNo%4)+'].stats.px[1]', pNewStats.px[1]);
       _.set(players, '['+(playerNo%4)+'].stats.px[2]', pNewStats.px[2]);
+*/
       _.set(players, '['+(playerNo%4)+'].stats.sp', Number(pNewStats.sp));
 
       changePlayerStats(playerNo, 'xp', activatedCard.xp);
@@ -493,6 +528,7 @@ function playACard(logSheet, players, playerNo) {
 
       logPlayerStats(logSheet, pObj, {
         info: 'plays a card', 
+        crystal: pObj.stats.q,
         stat: '"' + activatedCard.title + '" (' + activatedCard.id + ')',
         note: activatedCard.title + '\n' + JSON.stringify(activatedCard, null, 4),
         noCR: true
@@ -503,59 +539,37 @@ function playACard(logSheet, players, playerNo) {
   }
 }
 
-function gameBoardHindrances(playerObj, card) {
+function applyPoisons2Playerboard(playerObj, card) {
+}
+
+function applyHindrances2Gameboard(playerObj, card) {
+  console.log('arrived');
   // decode hindrances
   let obstacles = [];
   let intacles = [];
-  const income = card.income >> 3;
-  const outgo = card.outgo >> 3;
   // add them to the global tracks
-  if(isFlagSet((outgo &  1),  1)){
-    obstacles.push('1'); 
-    gameBoard.tracks.hindrance1.push(playerObj.color);
+  for(let bit=0; bit<5; bit++){
+    console.log('outgo:' + card.outgo + '...bit:' + bit + '::' + (1<<bit));
+    if ((card.outgo & (1<<bit)) == (1<<bit)) {
+      obstacles.push(bit+1);
+      _.set(gameBoard, 'tracks.hindrance'+(bit+1), 
+        _.concat(_.get(gameBoard, 'tracks.hindrance'+(bit+1)), playerObj.color));
+    }
   }
-  if(isFlagSet((outgo &  2),  2)){ 
-    obstacles.push('2'); 
-    gameBoard.tracks.hindrance2.push(playerObj.color);
+  for(let bit=0; bit<5; bit++){
+    if ((card.income & (1<<bit)) == (1<<bit)) {
+      intacles.push(bit+1);      
+      _.set(gameBoard, 'tracks.hindrance'+(bit+1), 
+        _.pullAt(_.get(gameBoard, 'tracks.hindrance'+(bit+1), 0)));
+    }
   }
-  if(isFlagSet((outgo &  4),  4)){ 
-    obstacles.push('3'); 
-    gameBoard.tracks.hindrance3.push(playerObj.color);
-  }
-  if(isFlagSet((outgo &  8),  8)){ 
-    obstacles.push('4'); 
-    gameBoard.tracks.hindrance4.push(playerObj.color);
-  }
-  if(isFlagSet((outgo & 16), 16)){ 
-    obstacles.push('5'); 
-    gameBoard.tracks.hindrance5.push(playerObj.color);
-  }
-  if(isFlagSet((income &  1),  1)){
-    intacles.push('1'); 
-    gameBoard.tracks.hindrance1.shift();
-  }
-  if(isFlagSet((income &  2),  2)){ 
-    intacles.push('2'); 
-    gameBoard.tracks.hindrance2.shift();
-  }
-  if(isFlagSet((income &  4),  4)){ 
-    intacles.push('3'); 
-    gameBoard.tracks.hindrance3.shift();
-  }
-  if(isFlagSet((income &  8),  8)){ 
-    intacles.push('4'); 
-    gameBoard.tracks.hindrance4.shift();
-  }
-  if(isFlagSet((income & 16), 16)){ 
-    intacles.push('5'); 
-    gameBoard.tracks.hindrance5.shift();
-  }
-
+  intacles=_.pull(intacles, 0);
+  obstacles=_.pull(obstacles, 0);
   logPlayerStats(logSheet, playerObj, {
     gameboard: {
       value: 
-  (obstacles.length>0 ? 'puts cubes onto hindrance-tracks: '+obstacles.join(' & ') : '') +
-  ( intacles.length>0 ? '\nremoves cubes from tracks: '+intacles.join(' & ') : ''),
+  (obstacles.length>0 ? 'puts cubes onto hindrance-tracks: '+_.sortBy(obstacles).join(' & ') : '') +
+  ( intacles.length>0 ? '\nremoves cubes from tracks: '+_.sortBy(intacles).join(' & ') : ''),
       note: 'hindrances:\n\n'+
             'track-1: '+gameBoard.tracks.hindrance1.join(', ')+'\n'+
             'track-2: '+gameBoard.tracks.hindrance2.join(', ')+'\n'+
@@ -565,7 +579,6 @@ function gameBoardHindrances(playerObj, card) {
     },
     noCR: true,
   });
-
 }
 
 // fetches top contributers on each track in an ugly way...
