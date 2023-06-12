@@ -11,6 +11,7 @@ players[j] = {
   },
   stats: {
     q: 6,       // crystals
+    cq: 0,      // collecting activated cards xp-crystals
     xp: 0,
     c: 0,       // calmness
     s: 0,       // stress
@@ -34,7 +35,11 @@ cards = {
   stage: '*',
   lvl: 1,
   q: 12,
-  act: { inRoundQ: 1, endRoundXP: 9, endRushedXP: 11 },
+  act: { 
+    inRoundQ: 1, 
+    endRoundXP: 9, 
+    endRushedXP: 11 
+  },
   calm: 1,
   stress: 0,
   income: 0,
@@ -46,7 +51,10 @@ cards = {
 };
 
 tiles = { 
-    pos: { x: 3, y: -3 },
+    pos: { 
+      x: 3, 
+      y: -3 
+    },
     type: 'tile',
     side: true,
     xp: 17,
