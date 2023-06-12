@@ -32,6 +32,8 @@ function doGet(){
   players = initPlayerDecks(spreadSheet, logSheet, players, shuffleCardIndexes(maxRow), tiles, numPlayers);
 
   logSheet.insertRowsAfter(logSheet.getMaxRows(), 1);
+  applyActiontiles(players);
+
   while((players[0].deck.length > 0 && players[0].stats.q > 1) || 
         (players[1].deck.length > 0 && players[1].stats.q > 1) || 
         (players[2].deck.length > 0 && players[2].stats.q > 1) || 
@@ -42,14 +44,13 @@ function doGet(){
 
     playACard(logSheet, players, (actionNo%numPlayers));
     trashCards(logSheet, players, (actionNo%numPlayers));
+    if(players[0].passed && players[1].passed && players[3].passed && players[3].passed)
+      break;
     actionNo++;
-    console.log('p0:>>> ' + players[0].deck.length + ':::' + players[0].stats.q);
-    console.log('p1:>>> ' + players[1].deck.length + ':::' + players[1].stats.q);
-    console.log('p2:>>> ' + players[2].deck.length + ':::' + players[2].stats.q);
-    console.log('p3:>>> ' + players[3].deck.length + ':::' + players[3].stats.q);
+    console.log('p0:> ' + players[0].deck.length + '::' + players[0].stats.q +'   p1:> ' + players[1].deck.length + '::' + players[1].stats.q+'   p2:> ' + players[2].deck.length + '::' + players[2].stats.q+'   p3:> ' + players[3].deck.length + '::' + players[3].stats.q);
   }
   logSheet.insertRowsAfter(logSheet.getMaxRows(), 1);
   roundEnding(logSheet, players);
-  console.log(players);
+//  console.log(players);
 
 }

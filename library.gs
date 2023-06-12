@@ -5,6 +5,7 @@ function initPlayers(numPlayers, tileSet) {
   for (let j = 0; j < numPlayers; j++) {
     players[j] = {
       index: j,
+      passed: false,
       color: playerColors[j],
       deck: [],
       deckIds: [],
@@ -275,10 +276,12 @@ function decodeSheetRow(i, srcValues, calcValues) {
 //    AU  AV  AW  AX  AY  AZ  BA  BB  BC
 //    3 | 2 | 1 | 3 | 2 | 1 | 3 | 2 | 1
 //    XX        | XX        | XX
-    let poisoned = 
-    ((srcValues[fromA1Notation('AV1').column-1] << 1 | srcValues[fromA1Notation('AW1').column-1]) << 4) |
-    ((srcValues[fromA1Notation('AY1').column-1] << 1 | srcValues[fromA1Notation('AZ1').column-1]) << 2) |
-    ((srcValues[fromA1Notation('BB1').column-1] << 1 | srcValues[fromA1Notation('BC1').column-1]));
+    let poisoned = ((srcValues[fromA1Notation('AV1').column-1] << 1 | 
+                     srcValues[fromA1Notation('AW1').column-1]) << 4) |
+                   ((srcValues[fromA1Notation('AY1').column-1] << 1 | 
+                     srcValues[fromA1Notation('AZ1').column-1]) << 2) |
+                   ((srcValues[fromA1Notation('BB1').column-1] << 1 | 
+                     srcValues[fromA1Notation('BC1').column-1]));
 
     if (srcValues[fromA1Notation('AU1').column-1])
       poisoned |= 48;
@@ -462,13 +465,17 @@ function changePlayerStats(p, v, s) {  // playerNo, whichStat, statNo or value (
 function trashCards(logSheet, players, playerNo) {
   const pObj = players[playerNo];
   // trash cards for their crystal-values
-  if(pObj.stats.q < 2 && pObj.deck.length > 2 && pObj.activated.length > 2){
+  if( (pObj.stats.q < 2) && 
+      (pObj.passed == false) &&
+      (pObj.deck.length > 2) && 
+      (pObj.activated.length > 2)){
     const trashedCard = pObj.deck.shift();
     pObj.stats.q += trashedCard.q;
     logPlayerStats(logSheet, pObj, {
-      info: 'trashes the card '+trashedCard.id, 
+      info: 'trashes a card', 
       crystal: pObj.stats.q,
       xp: pObj.stats.xp,
+      stat: '"' + trashedCard.title + '" (' + trashedCard.id + ')',
       note: trashedCard.title + '\n' + JSON.stringify(trashedCard, null, 4),
       noCR: false
     });
@@ -481,15 +488,12 @@ function playACard(logSheet, players, playerNo) {
   const pObj = players[playerNo];
 
   // if crystals still exist & personal deck's not finished 
-  if(pObj.stats.q > 0 && pObj.deck.length > 0){
+  // if available crystals are more than the last cards' cost
+  if( (pObj.stats.q > 0 && pObj.deck.length > 0) && 
+      (pObj.passed == false) &&
+      (pObj.stats.q >= pObj.deck[ _.size(pObj.deck)-1 ].q)){
 
-    // TO-DO: Implement the selection of card based on its
-    // score and advantages and splice it instead of popping it...
-
-    // if available crystals are more than the last cards' cost
-    if(pObj.stats.q >= pObj.deck[ _.size(pObj.deck)-1 ].q){
-
-      // priority-values are:
+      // sort upon:
       // - bigger crystal income
       // - smaller crystal outgo
         // - bigger xp
@@ -502,28 +506,6 @@ function playACard(logSheet, players, playerNo) {
       // create a sorting based on the priority-score for cards
       // _.orderBy(users, ['user', 'age'], ['asc', 'desc']);
 
-/*
-cards = {
-  no: 18,
-  id: 'e019',
-  type: 'card',
-  title: 'Walking on Eggshells',
-  xp: 19,
-  xpp: 21,
-  cost: 14,
-  str: 68,
-  stage: '*',
-  lvl: 1,
-  q: 12,
-  act: { inRoundQ: 1, endRoundXP: 9, endRushedXP: 11 },
-  calm: 1,
-  stress: 0,
-  income: 0,
-  antidotes: 0,
-  outgo: 24,
-  poisons: 0
-};
-*/
       _.set(pObj.deck, _.orderBy(pObj.deck, 
         ['q', 'cost', 'xpp', 'xp', 'nH', 'nHn', 'str'], 
         ['desc', 'desc', 'asc', 'asc', 'asc', 'desc', 'asc']));
@@ -564,7 +546,7 @@ cards = {
         // if immediatly, player only receives crystal with no leftover xp
         _.set(players, '['+(playerNo%4)+'].stats.q', pObj.stats.q + activatedCard.act.inRoundQ);
       }
-      applyHindrances2Gameboard(pObj, activatedCard);
+      applyHindrances2Gameboard(pObj, activatedCard, null);
       pNewStats = applyCard2Hindrances(pObj, activatedCard.income, activatedCard.outgo);
       _.set(players, '['+(playerNo%4)+'].stats.h', pNewStats.h);
       _.set(players, '['+(playerNo%4)+'].stats.sh', pNewStats.sh);
@@ -593,15 +575,18 @@ cards = {
       });
 
       return activatedCard;
-    }
+  }else{
+    players[playerNo].passed = true;
   }
 }
 
-function applyPoisons2Playerboard(playerObj, card) {
+function applyPoisons2Playerboard(playerObj, card, extender) {
+  card = _.pick(card, ['poisons', 'antidotes']);
 }
 
-function applyHindrances2Gameboard(playerObj, card) {
+function applyHindrances2Gameboard(playerObj, card, extender) {
   // decode hindrances
+  card = _.pick(card, ['income', 'outgo']);
   let obstacles = [];
   let intacles = [];
   // add them to the global tracks
@@ -622,7 +607,7 @@ function applyHindrances2Gameboard(playerObj, card) {
   }
   intacles=_.pull(intacles, 0);
   obstacles=_.pull(obstacles, 0);
-  logPlayerStats(logSheet, playerObj, {
+  let baseObj = {
     gameboard: {
       value: 
   (obstacles.length>0 ? 'puts cubes onto hindrance-tracks: '+_.sortBy(obstacles).join(' & ') : '') +
@@ -633,9 +618,15 @@ function applyHindrances2Gameboard(playerObj, card) {
             'track-3: '+gameBoard.tracks.hindrance3.join(', ')+'\n'+
             'track-4: '+gameBoard.tracks.hindrance4.join(', ')+'\n'+
             'track-5: '+gameBoard.tracks.hindrance5.join(', ')
-    },
-    noCR: true,
-  });
+    }
+  };
+  if(!extender){
+    console.log('extend here...');
+    console.log(extender);
+  }
+  logPlayerStats(logSheet, playerObj, _.isPlainObject(extender) ? 
+                                          _.merge(baseObj, extender, {noCR: true}) : 
+                                          _.merge(baseObj, {noCR: true}));
 }
 
 // fetches top contributers on each track in an ugly way...
@@ -678,6 +669,41 @@ function addSlave(p) {
   // rule: every slave addition costs a less income object for the master
   const slaveNames = ['slaveOne', 'slaveTwo', 'slaveThree'];
 
+}
+/*
+tiles = { 
+    pos: { 
+      x: 3, 
+      y: -3 
+    },
+    type: 'tile',
+    side: true,
+    xp: 17,
+    no: 24,
+    id: 'p25',
+    income: 0,
+    outgo: 8,
+    poisons: 0,
+    antidotes: 0,
+    players: 2,
+    stage: 'wood',
+    title: 'Career',
+*/
+function applyActiontiles(players) {
+  let pObj;
+  for(let i=0;i<4;i++){
+    pObj = players[i];
+    console.log(pObj.workers.master);
+//    applyPoisons2Playerboard(pObj, pObj.workers.master, {});
+    _.set(players, '['+(i%4)+'].stats.xp', Number(_.get(players, '['+(i%4)+'].stats.xp')) + pObj.workers.master.xp);
+    applyHindrances2Gameboard(pObj, pObj.workers.master, {
+      info: 'receives tile benefits', 
+      crystal: Number(_.get(players, '['+(i%4)+'].stats.q')),
+      xp: Number(_.get(players, '['+(i%4)+'].stats.xp')),
+      stat: '"' + pObj.workers.master.title + '" (' + pObj.workers.master.id + ')',
+      note: pObj.workers.master.title + '\n' + JSON.stringify(pObj.workers.master, null, 4),
+    });
+  }
 }
 
 function flipWorker(p) {
