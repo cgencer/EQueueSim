@@ -400,6 +400,9 @@ function logPlayerStats(sheet, playerObj, setOfVals) {
       case 'crystal':
         sheet.getRange(newRow, playerCols[playerNo]+2).setValue(v);
         break;
+      case 'xp':
+        sheet.getRange(newRow, playerCols[playerNo]+3).setValue(v);
+        break;
       case 'calm':
         sheet.getRange(newRow, playerCols[playerNo]+3).setValue(
             (playerObj.stats.c + v) + ' / ' + playerObj.stats.s);
@@ -481,6 +484,7 @@ function logPlayerStats(sheet, playerObj, setOfVals) {
         i=0;
         break;
       case 'hindrances':
+/*
         for(playerNo=0; playerNo<4; playerNo++){
           pos = [ 'E'+newRow+':I'+newRow, 
                       'Q'+newRow+':U'+newRow, 
@@ -493,6 +497,7 @@ function logPlayerStats(sheet, playerObj, setOfVals) {
           ]]);
         }
         break;
+*/
     }
   });
 }
