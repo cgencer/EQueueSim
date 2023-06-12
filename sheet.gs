@@ -404,12 +404,12 @@ function logPlayerStats(sheet, playerObj, setOfVals) {
         sheet.getRange(newRow, playerCols[playerNo]+3).setValue(v);
         break;
       case 'calm':
-        sheet.getRange(newRow, playerCols[playerNo]+3).setValue(
-            (playerObj.stats.c + v) + ' / ' + playerObj.stats.s);
+//        sheet.getRange(newRow, playerCols[playerNo]+3).setValue(
+//            (playerObj.stats.c + v) + ' / ' + playerObj.stats.s);
         break;
       case 'stress':
-        sheet.getRange(newRow, playerCols[playerNo]+3).setValue(
-            (playerObj.stats.c) + ' / ' + playerObj.stats.s + v);
+//        sheet.getRange(newRow, playerCols[playerNo]+3).setValue(
+//            (playerObj.stats.c) + ' / ' + playerObj.stats.s + v);
         break;
       case 'gameboard':
         const cols = [fromA1Notation('E1').column,

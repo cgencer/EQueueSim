@@ -16,6 +16,7 @@ function initPlayers(numPlayers, tileSet) {
       },
       stats: {
         q: 6,       // crystals
+        cq: 0,      // collecting activated cards xp-crystals
         xp: 0,
         c: 0,       // calmness
         s: 0,       // stress
@@ -72,6 +73,20 @@ function initPlayerDecks(sheet, logSheet, players, deckIndexes, workerSet, numpl
       let aCard = deckIndexes.shift();
       if (!aCard) { aCard = deckIndexes.shift(); }
       let theCard = decodeSheetRow(aCard, copySheet[aCard], copyCalc[aCard]);
+
+      // count the number of hindrances to sort descending
+      let numHindrances = 0;
+      for(let bit=0; bit<5; bit++)
+        if ((theCard.outgo & (1<<bit)) == (1<<bit))
+          numHindrances++;
+      theCard.nH = numHindrances;
+      // number of the negative hindrances (result of card)
+      numHindrances = 0;
+      for(let bit=0; bit<5; bit++)
+        if ((theCard.income & (1<<bit)) == (1<<bit))
+          numHindrances++;
+      theCard.nHn = numHindrances;
+
       players[j].deck.push(theCard);
       players[j].deckIds.push(theCard.id);
     }
@@ -444,9 +459,25 @@ function changePlayerStats(p, v, s) {  // playerNo, whichStat, statNo or value (
 //  else players[p].stats[v] += s;
 }
 
+function trashCards(logSheet, players, playerNo) {
+  const pObj = players[playerNo];
+  // trash cards for their crystal-values
+  if(pObj.stats.q < 2 && pObj.deck.length > 2 && pObj.activated.length > 2){
+    const trashedCard = pObj.deck.shift();
+    pObj.stats.q += trashedCard.q;
+    logPlayerStats(logSheet, pObj, {
+      info: 'trashes the card '+trashedCard.id, 
+      crystal: pObj.stats.q,
+      xp: pObj.stats.xp,
+      note: trashedCard.title + '\n' + JSON.stringify(trashedCard, null, 4),
+      noCR: false
+    });
+  }
+}
+
 function playACard(logSheet, players, playerNo) {
 
-  let pNewStats, immediateEarn, tempXP;
+  let pNewStats, immediateEarn, tempXP, pushText;
   const pObj = players[playerNo];
 
   // if crystals still exist & personal deck's not finished 
@@ -461,17 +492,43 @@ function playACard(logSheet, players, playerNo) {
       // priority-values are:
       // - bigger crystal income
       // - smaller crystal outgo
-      // - bigger xp
+        // - bigger xp
       // - level of players pyramid; next level is always prior; passed levels are unimportant
-      // - lesser cost
+        // - lesser cost
       // - matching activity-icons with available prospects
       // - more activity-icons
       // - axes/required active emotiles corrolation
   
       // create a sorting based on the priority-score for cards
+      // _.orderBy(users, ['user', 'age'], ['asc', 'desc']);
+
+/*
+cards = {
+  no: 18,
+  id: 'e019',
+  type: 'card',
+  title: 'Walking on Eggshells',
+  xp: 19,
+  xpp: 21,
+  cost: 14,
+  str: 68,
+  stage: '*',
+  lvl: 1,
+  q: 12,
+  act: { inRoundQ: 1, endRoundXP: 9, endRushedXP: 11 },
+  calm: 1,
+  stress: 0,
+  income: 0,
+  antidotes: 0,
+  outgo: 24,
+  poisons: 0
+};
+*/
+      _.set(pObj.deck, _.orderBy(pObj.deck, 
+        ['q', 'cost', 'xpp', 'xp', 'nH', 'nHn', 'str'], 
+        ['desc', 'desc', 'asc', 'asc', 'asc', 'desc', 'asc']));
 
       const activatedCard = pObj.deck.pop();
-      console.log('we have an active card!: '+activatedCard.id);
       _.set(players, '['+(playerNo%4)+'].deckIds', _.pull(pObj.deckIds, activatedCard.id));
 
       // pay the crystals
@@ -479,19 +536,17 @@ function playACard(logSheet, players, playerNo) {
         _.get(players, '['+(playerNo%4)+'].stats.q') - activatedCard.q);
 
       // check for the need to push (e.g. receive crystal immediatly)
+      immediateEarn = (Number(_.get(players, '['+(playerNo%4)+'].stats.q')) == 0) ? true : false;
+      pushText = immediateEarn ? ' with quickening' : '';
 
-      // if immediatly, player only receives crystal with no leftover xp
-      // if waits for turn end, receives crystal & leftover xp (turns into crystal)
       // if their workers are on a matching tile, they receive crystal & rushed xp
 
-      
-      immediateEarn = false;
+      console.info('activating card "'+activatedCard.title+'" ('+activatedCard.id+') for player '+playerNo+' in stage '+activatedCard.stage);
 
       // matching workers check
       const workerNama = ['master', 'slaveOne', 'slaveTwo', 'slaveThree'];
       tempXP = activatedCard.act.endRoundXP;
-      console.info('activating card "'+activatedCard.title+'" ('+activatedCard.id+') for player '+playerNo+' in stage '+activatedCard.stage);
-
+      // if waits for turn end, receives crystal & leftover xp (turns into crystal)
       if(!immediateEarn){
         for(j=0; j<workerNama.length; j++){
           if(_.has(pObj.workers, workerNama[j])){
@@ -502,9 +557,11 @@ function playACard(logSheet, players, playerNo) {
             }
           }
         }
-        _.set(players, '['+(playerNo%4)+'].stats.xp', pObj.stats.xp + tempXP);
+        _.set(players, '['+(playerNo%4)+'].stats.xp', pObj.stats.xp + tempXP + (Number(activatedCard.act.inRoundQ)*10) );
+        _.set(players, '['+(playerNo%4)+'].stats.cq', Number(_.get(players, '['+(playerNo%4)+'].stats.cq') + Number(activatedCard.act.inRoundQ)));
 
       }else{
+        // if immediatly, player only receives crystal with no leftover xp
         _.set(players, '['+(playerNo%4)+'].stats.q', pObj.stats.q + activatedCard.act.inRoundQ);
       }
       applyHindrances2Gameboard(pObj, activatedCard);
@@ -527,8 +584,9 @@ function playACard(logSheet, players, playerNo) {
       _.set(players, '['+(playerNo%4)+'].activated', tempArr);
 
       logPlayerStats(logSheet, pObj, {
-        info: 'plays a card', 
+        info: 'plays a card' + pushText, 
         crystal: pObj.stats.q,
+        xp: pObj.stats.xp,
         stat: '"' + activatedCard.title + '" (' + activatedCard.id + ')',
         note: activatedCard.title + '\n' + JSON.stringify(activatedCard, null, 4),
         noCR: true
@@ -543,13 +601,12 @@ function applyPoisons2Playerboard(playerObj, card) {
 }
 
 function applyHindrances2Gameboard(playerObj, card) {
-  console.log('arrived');
   // decode hindrances
   let obstacles = [];
   let intacles = [];
   // add them to the global tracks
   for(let bit=0; bit<5; bit++){
-    console.log('outgo:' + card.outgo + '...bit:' + bit + '::' + (1<<bit));
+//    console.log('outgo:' + card.outgo + '...bit:' + bit + '::' + (1<<bit));
     if ((card.outgo & (1<<bit)) == (1<<bit)) {
       obstacles.push(bit+1);
       _.set(gameBoard, 'tracks.hindrance'+(bit+1), 
@@ -591,15 +648,20 @@ function topContributers(theArr) {
 }
 
 function roundEnding(logSheet, players) {
+  let newQ, newXP;
   const playerColors = ['red', 'yellow', 'green', 'blue'];
   const allRemaining = _.concat(topContributers(gameBoard.tracks.hindrance1), topContributers(gameBoard.tracks.hindrance2), topContributers(gameBoard.tracks.hindrance3), topContributers(gameBoard.tracks.hindrance4), topContributers(gameBoard.tracks.hindrance5));
 
   for(let i=0;i<4;i++){
+    newQ = _.get(players, '['+(i%4)+'].stats.cq');
+    newXP = _.get(players, '['+(i%4)+'].stats.xp' - (newQ * 10));
     logPlayerStats(logSheet, players[i], {
       noCR: true,
       info: 'round clean-up',
+      crystal: newQ,
+      xp: newXP,
       gameboard: {
-        value: _.indexOf(allRemaining, playerColors[i]) == -1 ? '' : 
+        value: _.indexOf(allRemaining, playerColors[i]) == -1 ? 'no cubes on any track' : 
         'leaves ' + _.countBy(allRemaining)[playerColors[i]] + ' cubes on tracks.',
         note: 'hindrance-tracks left-overs:\n\n'+
               'top1: '+topContributers(gameBoard.tracks.hindrance1)+'\n'+
