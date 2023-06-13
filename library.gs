@@ -68,6 +68,7 @@ function initPlayers(numPlayers, tileSet) {
 function initPlayerDecks(sheet, logSheet, players, deckIndexes, workerSet, numplayers) {
   let copySheet = sheet.getRange('Sheet1!A2:BZ' + sheet.getLastRow()).getValues();
   let copyCalc = sheet.getRange('calc!A2:O' + sheet.getLastRow()).getValues();
+  console.log(deckIndexes);
 
   for (let j = 0; j < numplayers; j++) {
     for (let i = 0; i < 6; i++) {
@@ -91,7 +92,6 @@ function initPlayerDecks(sheet, logSheet, players, deckIndexes, workerSet, numpl
       players[j].deck.push(theCard);
       players[j].deckIds.push(theCard.id);
     }
-    players[j].stats.px = [0,0,0];
   }
 
   logPlayerStats(logSheet, null, {
