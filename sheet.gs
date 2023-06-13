@@ -358,7 +358,7 @@ function cachedWrite(sheet, mode, y, x, v) {
 
 }
 
-function logPlayerStats(sheet, playerObj, setOfVals) {
+function logPlayerStats(playerObj, setOfVals) {
   let playerNo, pos;
   let playerCols = [fromA1Notation('A1').column, 
                     fromA1Notation('G1').column, 
@@ -367,7 +367,7 @@ function logPlayerStats(sheet, playerObj, setOfVals) {
   let cols = ['info', 'stat', 'crystals', 'calmstress', 
   'hindrance', '', '', '', '', 'poison', '', ''];
 
-  let newRow = (_.has(setOfVals, 'noCR') && setOfVals['noCR'] === true) ? sheet.getMaxRows() : sheet.getMaxRows() + 1; 
+  let newRow = (_.has(setOfVals, 'noCR') && setOfVals['noCR'] === true) ? logSheet.getMaxRows() : logSheet.getMaxRows() + 1; 
   let i = 0;
   let n = '';
 
@@ -389,26 +389,26 @@ function logPlayerStats(sheet, playerObj, setOfVals) {
       case 'noCR':
         break;
       case 'info':
-        sheet.getRange(newRow, playerCols[playerNo]).setValue(v);
+        logSheet.getRange(newRow, playerCols[playerNo]).setValue(v);
         break;
       case 'stat':
-        sheet.getRange(newRow, playerCols[playerNo]+1).setValue(v);
+        logSheet.getRange(newRow, playerCols[playerNo]+1).setValue(v);
         break;
       case 'note':
-        sheet.getRange(newRow, playerCols[playerNo]+1).setNote(v);
+        logSheet.getRange(newRow, playerCols[playerNo]+1).setNote(v);
         break;
       case 'crystal':
-        sheet.getRange(newRow, playerCols[playerNo]+2).setValue(v);
+        logSheet.getRange(newRow, playerCols[playerNo]+2).setValue(v);
         break;
       case 'xp':
-        sheet.getRange(newRow, playerCols[playerNo]+3).setValue(v);
+        logSheet.getRange(newRow, playerCols[playerNo]+3).setValue(v);
         break;
       case 'calm':
-//        sheet.getRange(newRow, playerCols[playerNo]+3).setValue(
+//        logSheet.getRange(newRow, playerCols[playerNo]+3).setValue(
 //            (playerObj.stats.c + v) + ' / ' + playerObj.stats.s);
         break;
       case 'stress':
-//        sheet.getRange(newRow, playerCols[playerNo]+3).setValue(
+//        logSheet.getRange(newRow, playerCols[playerNo]+3).setValue(
 //            (playerObj.stats.c) + ' / ' + playerObj.stats.s + v);
         break;
       case 'gameboard':
@@ -417,9 +417,9 @@ function logPlayerStats(sheet, playerObj, setOfVals) {
                       fromA1Notation('Q1').column,
                       fromA1Notation('W1').column]; 
         if(v!='')
-          sheet.getRange(newRow, cols[playerNo]).setValue(v);
+          logSheet.getRange(newRow, cols[playerNo]).setValue(v);
         if(n!='')
-          sheet.getRange(newRow, cols[playerNo]).setNote(n);
+          logSheet.getRange(newRow, cols[playerNo]).setNote(n);
         break;
       case 'playerboard':
         break;
@@ -429,7 +429,7 @@ function logPlayerStats(sheet, playerObj, setOfVals) {
                     'Q'+newRow+':U'+newRow, 
                     'AC'+newRow+':AG'+newRow, 
                     'AO'+newRow+':AS'+newRow];
-        sheet.getRange(pos[playerNo]).setValues([[
+        logSheet.getRange(pos[playerNo]).setValues([[
           (isFlagSet(v[playerNo], 16) ? 'X' : ''), (isFlagSet(v[playerNo],  8) ? 'X' : ''),
           (isFlagSet(v[playerNo],  4) ? 'X' : ''), (isFlagSet(v[playerNo],  2) ? 'X' : ''),
           (isFlagSet(v[playerNo],  1) ? 'X' : '')
@@ -443,7 +443,7 @@ function logPlayerStats(sheet, playerObj, setOfVals) {
                 'Q'+newRow+':X'+newRow, 
                 'AC'+newRow+':AJ'+newRow, 
                 'AO'+newRow+':AV'+newRow];
-        sheet.getRange(pos[playerNo]).setValues([[
+        logSheet.getRange(pos[playerNo]).setValues([[
           (isFlagSet(v.h,  1) ? 'X' : ''), (isFlagSet(v.h,  2) ? 'X' : ''),
           (isFlagSet(v.h,  4) ? 'X' : ''), (isFlagSet(v.h,  8) ? 'X' : ''),
           (isFlagSet(v.h, 16) ? 'X' : ''), 
@@ -453,13 +453,13 @@ function logPlayerStats(sheet, playerObj, setOfVals) {
         break;
       case 'infos':
         _.each(v, function(c){
-          sheet.getRange(newRow, playerCols[i++]).setValue(c);
+          logSheet.getRange(newRow, playerCols[i++]).setValue(c);
         });
         i=0;
         break;
       case 'stats':
         _.each(v, function(c){
-          sheet.getRange(newRow, playerCols[i++]+1).setValue(c);
+          logSheet.getRange(newRow, playerCols[i++]+1).setValue(c);
         });
         i=0;
         break;
@@ -469,17 +469,17 @@ function logPlayerStats(sheet, playerObj, setOfVals) {
         break;
       case 'crystals':
         _.each(v, function(c){
-          sheet.getRange(newRow, playerCols[i++]+2).setValue(c);
+          logSheet.getRange(newRow, playerCols[i++]+2).setValue(c);
         });
         i=0;
         break;
       case 'calmstress':
         for(playerNo=0; playerNo<4; playerNo++)
-          sheet.getRange(newRow, playerCols[playerNo]+3).setValue(v[playerNo]+' / '+v[playerNo]);
+          logSheet.getRange(newRow, playerCols[playerNo]+3).setValue(v[playerNo]+' / '+v[playerNo]);
         break;
       case 'poisons':
         _.each(v, function(c){
-//          sheet.getRange(newRow, playerCols[i++]+3).setValue(v+' / '+v);
+//          logSheet.getRange(newRow, playerCols[i++]+3).setValue(v+' / '+v);
         });
         i=0;
         break;
@@ -490,7 +490,7 @@ function logPlayerStats(sheet, playerObj, setOfVals) {
                       'Q'+newRow+':U'+newRow, 
                       'AC'+newRow+':AG'+newRow, 
                       'AO'+newRow+':AS'+newRow];
-          sheet.getRange(pos[playerNo]).setValues([[
+          logSheet.getRange(pos[playerNo]).setValues([[
             (isFlagSet(v[playerNo],  1) ? 'X' : ''), (isFlagSet(v[playerNo],  2) ? 'X' : ''),
             (isFlagSet(v[playerNo],  4) ? 'X' : ''), (isFlagSet(v[playerNo],  8) ? 'X' : ''),
             (isFlagSet(v[playerNo], 16) ? 'X' : '')

@@ -44,20 +44,20 @@ function initPlayers(numPlayers, tileSet) {
     _.set(players, '['+(p%4)+'].stats.px[2]', pNewStats.px[2]);
 */    _.set(players, '['+(p%4)+'].stats.sp', Number(pNewStats.sp));
 
-    logPlayerStats(logSheet, players[p], {
+    logPlayerStats(players[p], {
       poiHind: players[p].stats,
       noCR: true
     });
 
   }
 
-  logPlayerStats(logSheet, null, {
+  logPlayerStats(null, {
     infos: ['places workers'], 
     stats: tileSet.l, 
       noCR: true
   });
 
-  logPlayerStats(logSheet, null, {
+  logPlayerStats(null, {
     infos: ['receives crystals'],
     crystals: [6]
   });
@@ -65,7 +65,7 @@ function initPlayers(numPlayers, tileSet) {
   return players;
 }
 
-function initPlayerDecks(sheet, logSheet, players, deckIndexes, workerSet, numplayers) {
+function initPlayerDecks(sheet, deckIndexes, workerSet, numplayers) {
   let copySheet = sheet.getRange('Sheet1!A2:BZ' + sheet.getLastRow()).getValues();
   let copyCalc = sheet.getRange('calc!A2:O' + sheet.getLastRow()).getValues();
   console.log(deckIndexes);
@@ -94,7 +94,7 @@ function initPlayerDecks(sheet, logSheet, players, deckIndexes, workerSet, numpl
     }
   }
 
-  logPlayerStats(logSheet, null, {
+  logPlayerStats(null, {
     infos: ['picks cards'], 
     stats: [
         players[0].deckIds.join(';'), 
@@ -371,7 +371,7 @@ function modifyPoisons(logSheet, playerObj, incomeVal, outgoVal) {
   }
 
   // save remaining SPs back...
-  logPlayerStats(logSheet, playerObj, {
+  logPlayerStats(playerObj, {
     playerboard: {
       value: '',
       note: 'poisons:\n\n'+
@@ -462,7 +462,7 @@ function changePlayerStats(p, v, s) {  // playerNo, whichStat, statNo or value (
 //  else players[p].stats[v] += s;
 }
 
-function trashCards(logSheet, players, playerNo) {
+function trashCards(playerNo) {
   const pObj = players[playerNo];
   // trash cards for their crystal-values
   if( (pObj.stats.q < 2) && 
@@ -471,7 +471,7 @@ function trashCards(logSheet, players, playerNo) {
       (pObj.activated.length > 2)){
     const trashedCard = pObj.deck.shift();
     pObj.stats.q += trashedCard.q;
-    logPlayerStats(logSheet, pObj, {
+    logPlayerStats(pObj, {
       info: 'trashes a card', 
       crystal: pObj.stats.q,
       xp: pObj.stats.xp,
@@ -482,7 +482,7 @@ function trashCards(logSheet, players, playerNo) {
   }
 }
 
-function playACard(logSheet, players, playerNo) {
+function playACard(playerNo) {
 
   let pNewStats, immediateEarn, tempXP, pushText;
   const pObj = players[playerNo];
@@ -565,7 +565,7 @@ function playACard(logSheet, players, playerNo) {
       tempArr.push(activatedCard.id);
       _.set(players, '['+(playerNo%4)+'].activated', tempArr);
 
-      logPlayerStats(logSheet, pObj, {
+      logPlayerStats(pObj, {
         info: 'plays a card' + pushText, 
         crystal: pObj.stats.q,
         xp: pObj.stats.xp,
@@ -624,9 +624,9 @@ function applyHindrances2Gameboard(playerObj, card, extender) {
     console.log('extend here...');
     console.log(extender);
   }
-  logPlayerStats(logSheet, playerObj, _.isPlainObject(extender) ? 
-                                          _.merge(baseObj, extender, {noCR: true}) : 
-                                          _.merge(baseObj, {noCR: true}));
+  logPlayerStats(playerObj, _.isPlainObject(extender) ? 
+                                    _.merge(baseObj, extender, {noCR: true}) : 
+                                    _.merge(baseObj, {noCR: true}));
 }
 
 // fetches top contributers on each track in an ugly way...
@@ -638,7 +638,7 @@ function topContributers(theArr) {
   return [];
 }
 
-function roundEnding(logSheet, players) {
+function roundEnding() {
   let newQ, newXP;
   const playerColors = ['red', 'yellow', 'green', 'blue'];
   const allRemaining = _.concat(topContributers(gameBoard.tracks.hindrance1), topContributers(gameBoard.tracks.hindrance2), topContributers(gameBoard.tracks.hindrance3), topContributers(gameBoard.tracks.hindrance4), topContributers(gameBoard.tracks.hindrance5));
@@ -646,7 +646,8 @@ function roundEnding(logSheet, players) {
   for(let i=0;i<4;i++){
     newQ = _.get(players, '['+(i%4)+'].stats.cq');
     newXP = _.get(players, '['+(i%4)+'].stats.xp' - (newQ * 10));
-    logPlayerStats(logSheet, players[i], {
+    _.set(players,'['+i+'].passed', false);
+    logPlayerStats(players[i], {
       noCR: true,
       info: 'round clean-up',
       crystal: newQ,
@@ -670,32 +671,14 @@ function addSlave(p) {
   const slaveNames = ['slaveOne', 'slaveTwo', 'slaveThree'];
 
 }
-/*
-tiles = { 
-    pos: { 
-      x: 3, 
-      y: -3 
-    },
-    type: 'tile',
-    side: true,
-    xp: 17,
-    no: 24,
-    id: 'p25',
-    income: 0,
-    outgo: 8,
-    poisons: 0,
-    antidotes: 0,
-    players: 2,
-    stage: 'wood',
-    title: 'Career',
-*/
-function applyActiontiles(players) {
+
+function applyActiontiles() {
   let pObj;
   for(let i=0;i<4;i++){
     pObj = players[i];
-    console.log(pObj.workers.master);
 //    applyPoisons2Playerboard(pObj, pObj.workers.master, {});
-    _.set(players, '['+(i%4)+'].stats.xp', Number(_.get(players, '['+(i%4)+'].stats.xp')) + pObj.workers.master.xp);
+    _.set(players, '['+(i%4)+'].stats.xp', 
+      Number(_.get(players, '['+(i%4)+'].stats.xp')) + pObj.workers.master.xp);
     applyHindrances2Gameboard(pObj, pObj.workers.master, {
       info: 'receives tile benefits', 
       crystal: Number(_.get(players, '['+(i%4)+'].stats.q')),
