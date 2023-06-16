@@ -93,7 +93,7 @@ function initPlayerDecks(deckIndexes, workerSet) {
   for (let x = 0; x < numPlayers; x++) {
     players[x].deck = _.sortBy(players[x].deck, ['xp', 'xpp', 'q']);
     for (let y = 0; y < 6; y++) {
-      players[x].deck[y].q -= 100;
+//      players[x].deck[y].act.q -= 100;
     }
   }
   return players;
@@ -446,19 +446,23 @@ function changePlayerStats(p, v, s) {  // playerNo, whichStat, statNo or value (
 function trashCards(playerNo) {
 
   // TO-DO: give priority to higher valued cards
-
+  playerNo %= numPlayers;
   const pObj = players[playerNo];
+  const tempDeck = _.orderBy(pObj.deck, 'act.q', 'desc');
+    console.log(tempDeck);
+
   // trash cards for their crystal-values
   if( (pObj.stats.q < 2) && 
       (pObj.passed == false) &&
       (pObj.deck.length > 2) && 
       (pObj.activated.length > 2)){
-    const trashedCard = pObj.deck.shift();
-    players[ playerNo%numPlayers ].stats.q = 
-      players[ playerNo%numPlayers ].stats.q + trashedCard.act.qr;
+    const trashedCard = _.pullAt(pObj.deck, [_.findIndex(pObj.deck, {id: tempDeck[0].id})])[0];
+    console.log(trashedCard);
+    players[ playerNo ].deck = pObj.deck;
+    players[ playerNo ].stats.q += trashedCard.act.qr;
     logPlayerStats(pObj, {
       info: 'trashes a card', 
-      crystal: players[ playerNo%numPlayers ].stats.q,
+      crystal: players[ playerNo ].stats.q,
       stat: '"' + trashedCard.title + '" (' + trashedCard.id + ')',
       note: trashedCard.title + '\n' + JSON.stringify(trashedCard, null, 4),
       noCR: false
@@ -525,7 +529,7 @@ console.log('inner');
       // +Q + (Q)   -> crystals received at the end of round
       // Qin        -> if card is trashed, receive only this amount of crystals
       players[ playerNo ].stats.cq += 
-        activatedCard.act.q + activatedCard.act.qq + activatedCard.act.qr;
+        activatedCard.act.q + activatedCard.act.qq;
 
       applyHindrances2Gameboard(pObj, activatedCard, null);
       pNewStats = applyCard2Hindrances(pObj, activatedCard.income, activatedCard.outgo);
