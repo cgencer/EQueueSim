@@ -449,7 +449,6 @@ function trashCards(playerNo) {
   playerNo %= numPlayers;
   const pObj = players[playerNo];
   const tempDeck = _.orderBy(pObj.deck, 'act.q', 'desc');
-    console.log(tempDeck);
 
   // trash cards for their crystal-values
   if( (pObj.stats.q < 2) && 
@@ -457,7 +456,7 @@ function trashCards(playerNo) {
       (pObj.deck.length > 2) && 
       (pObj.activated.length > 2)){
     const trashedCard = _.pullAt(pObj.deck, [_.findIndex(pObj.deck, {id: tempDeck[0].id})])[0];
-    console.log(trashedCard);
+    console.log('trashed card is '+trashedCard.id+' with a q value of '+trashedCard.act.qr);
     players[ playerNo ].deck = pObj.deck;
     players[ playerNo ].stats.q += trashedCard.act.qr;
     logPlayerStats(pObj, {
@@ -482,7 +481,6 @@ function playACard(playerNo) {
       // if upcoming card cost is payable by the player
       (pObj.stats.q >= pObj.deck[ _.size(pObj.deck)-1 ].act.q)){
 
-console.log('inner');
       // sort upon:
       // - bigger crystal income
       // - smaller crystal outgo
@@ -613,31 +611,30 @@ function roundEnding() {
   const playerColors = ['red', 'yellow', 'green', 'blue'];
   const allRemaining = _.concat(topContributers(gameBoard.tracks.hindrance1), topContributers(gameBoard.tracks.hindrance2), topContributers(gameBoard.tracks.hindrance3), topContributers(gameBoard.tracks.hindrance4), topContributers(gameBoard.tracks.hindrance5));
 
-  for(let i=0;i<4;i++){
-    console.log('cq:'+i+': '+players[i].stats.cq);
-    if(roundNo>0){
+  if(roundNo>0){
+    for(let i=0;i<4;i++){
       players[i].stats.q = players[i].stats.cq;
       players[i].stats.cq = 0;
       players[i].passed = false;
       players[i].deck = [];
       players[i].deckIds = [];
-    }
 
-    logPlayerStats(players[ i%numPlayers ], {
-      noCR: true,
-      info: 'round clean-up',
-      crystal: players[i].stats.q,
-      gameboard: {
-        value: _.indexOf(allRemaining, playerColors[ i%numPlayers ]) == -1 ? 'no cubes on any track' : 
-        'leaves ' + _.countBy(allRemaining)[playerColors[i%numPlayers]] + ' cubes on tracks.',
-        note: 'hindrance-tracks left-overs:\n\n'+
-              'top1: '+topContributers(gameBoard.tracks.hindrance1)+'\n'+
-              'top2: '+topContributers(gameBoard.tracks.hindrance2)+'\n'+
-              'top3: '+topContributers(gameBoard.tracks.hindrance3)+'\n'+
-              'top4: '+topContributers(gameBoard.tracks.hindrance4)+'\n'+
-              'top5: '+topContributers(gameBoard.tracks.hindrance5)
-      }
-    });
+      logPlayerStats(players[i], {
+        noCR: true,
+        info: 'round clean-up',
+        crystal: players[i].stats.q,
+        gameboard: {
+          value: _.indexOf(allRemaining, playerColors[i]) == -1 ? 'no cubes on any track' : 
+          'leaves ' + _.countBy(allRemaining)[playerColors[i]] + ' cubes on tracks.',
+          note: 'hindrance-tracks left-overs:\n\n'+
+                'top1: '+topContributers(gameBoard.tracks.hindrance1)+'\n'+
+                'top2: '+topContributers(gameBoard.tracks.hindrance2)+'\n'+
+                'top3: '+topContributers(gameBoard.tracks.hindrance3)+'\n'+
+                'top4: '+topContributers(gameBoard.tracks.hindrance4)+'\n'+
+                'top5: '+topContributers(gameBoard.tracks.hindrance5)
+        }
+      });
+    }
   }
 }
 
@@ -660,7 +657,7 @@ function applyActiontiles() {
   }
 
   for(let i=0;i<4;i++){
-    pObj = players[ i%numPlayers ];
+    pObj = players[i];
 //    applyPoisons2Playerboard(pObj, pObj.workers.master, {});
     applyHindrances2Gameboard(pObj, pObj.workers.master, {
       info: 'receives tile benefits', 
