@@ -1,6 +1,7 @@
 # EQueueSim
 This is the simulator-code running on GoogleSheets Apps-script for my upcoming boardgame EQueue (offline game)
 
+NOTE: As the JS-interpreter on GoogleSheets is a bit rusty (EcmaScript 6), language features of modern JS couldn't be implemented efficiently, also missing of OOP-features is result of this. I'd be happier to create classes with methods.   
 
 This project is tied quite deeply into the GoogleSheet where I keep all my card-parameters for over 200 cards and action-tiles.
 I will soon also create a simple dummy-sheet to show how it is used to calculate all possibilities, strength curves of each item, etc.
@@ -19,7 +20,7 @@ income etc.
 
 This is the sample output from a gameplay run (still working on)...
 
-[![Example gameplay](screenshots/halfway-output.png)](https://raw.githubusercontent.com/cgencer/EQueueSim/main/screenshots/halfway-output.png)
+[![Example gameplay](screenshots/later-output.png)](https://raw.githubusercontent.com/cgencer/EQueueSim/main/screenshots/later-output.png)
 
 
 ### Some notes on the sheet requirements and its connection to Photoshop
